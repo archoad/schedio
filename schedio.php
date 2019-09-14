@@ -121,13 +121,13 @@ function redirectUser($data) {
 	$role = getRole($_SESSION['role']);
 	switch ($_SESSION['role']) {
 		case '1': // Administrateur
-			headPage($appli_titre, $role);
+			headPage($appli_titre, sprintf("%s %s - %s", $_SESSION['prenom'], $_SESSION['nom'], $role));
 			menuAdmin();
 			footPage();
 			break;
 		case '2': // Directeur de projet
 		case '3': // Chef de projet
-			headPage($appli_titre, $role);
+			headPage($appli_titre, sprintf("%s %s - %s", $_SESSION['prenom'], $_SESSION['nom'], $role));
 			menuUser();
 			footPage();
 			break;

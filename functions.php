@@ -102,7 +102,7 @@ function infoSession() {
 	$infoNav = sprintf("%s - %s - %s", $_SESSION['os'], $_SESSION['browser'], $_SESSION['ipaddr']);
 	$infoUser = sprintf("Connecté en tant que <b>%s %s</b>", $_SESSION['prenom'], $_SESSION['nom']);
 	$logoff = sprintf("<a href='schedio.php?action=disconnect'>Déconnexion&nbsp;<img border='0' alt='logoff' src='pict/turnoff.png' width='10'></a>");
-	return sprintf("Powered by Schedio - %s - %s - %s - %s", $infoDay, $infoNav, $infoUser, $logoff);
+	return sprintf("Powered by σχέδιο - %s - %s - %s - %s", $infoDay, $infoNav, $infoUser, $logoff);
 }
 
 
@@ -325,15 +325,17 @@ function menuAdmin() {
 
 
 function menuUser() {
-	if ($_SESSION['role'] == 2) { $leader = true; } else { $leader = false; }
 	printf("<div class='row'>\n");
 	printf("<div class='column left'>\n");
+	linkMsg("user.php?action=project_mgmt", "Gestion de projet", "project_mgmt.png", 'menu');
+	linkMsg("user.php?action=password", "Changer de mot de passe", "cadenas.png", 'menu');
 	printf("</div>\n<div class='column right'>\n");
-	if ($leader) {
+	if ($_SESSION['role']==='2') {
 		linkMsg("user.php?action=new_project", "Ajouter un projet", "add_project.png", 'menu');
 		linkMsg("user.php?action=modif_project", "Modifier un projet", "modif_project.png", 'menu');
 	}
 	printf("</div>\n</div>");
+
 }
 
 
@@ -344,6 +346,97 @@ function getRole($id) {
 	$row = mysqli_fetch_object($result);
 	dbDisconnect($base);
 	return $row->intitule;
+}
+
+
+function getChapter($id) {
+	$base = dbConnect();
+	$request = sprintf("SELECT * FROM chapter WHERE id='%d' LIMIT 1", intval($id));
+	$result = mysqli_query($base, $request);
+	$row = mysqli_fetch_object($result);
+	dbDisconnect($base);
+	return sprintf("%d - %s", $row->num, $row->nom);
+}
+
+
+function getUser($id) {
+	$base = dbConnect();
+	$request = sprintf("SELECT * FROM users WHERE id='%d' LIMIT 1", intval($id));
+	$result = mysqli_query($base, $request);
+	$row = mysqli_fetch_object($result);
+	dbDisconnect($base);
+	return sprintf("%s %s", $row->prenom, $row->nom);
+}
+
+
+function displayDate($date) {
+	return strftime("%d %B %Y", strtotime($date));
+}
+
+
+function displayShortDate($date) {
+	return strftime("%d %b %Y", strtotime($date));
+}
+
+
+function computeDuration($begin, $end) {
+	$interval = date_diff(date_create($begin), date_create($end));
+	if ($interval->invert) {
+		return "Retard de ".$interval->format('%a jours');
+	} else {
+		return $interval->format('%a jours');
+	}
+}
+
+
+function taskProgressBar($id) {
+	$base = dbConnect();
+	$request = sprintf("SELECT avancement FROM task WHERE id='%d' LIMIT 1", intval($id));
+	$result = mysqli_query($base, $request);
+	$record = mysqli_fetch_object($result);
+	dbDisconnect($base);
+	$percentage = intval($record->avancement);
+	$result = sprintf("<div class='task-container'>\n<div class='task-background'>\n<div class='task-foreground' style='width: %d%%'>%d%%</div>\n</div>\n</div>\n", $percentage, $percentage);
+	return $result;
+}
+
+
+function computeProjectProgress($id) {
+	$val = 0;
+	$base = dbConnect();
+	$request = sprintf("SELECT avancement FROM task WHERE projet='%d' ", intval($id));
+	$result = mysqli_query($base, $request);
+	$max = intval($result->num_rows) * 100;
+	while ($row = mysqli_fetch_object($result)) {
+		$val += intval($row->avancement);
+	}
+	dbDisconnect($base);
+	if ($max) {
+		return round(100 * $val / $max);
+	} else {
+		return 0;
+	}
+}
+
+
+function projectProgressBar($id) {
+	$percentage = computeProjectProgress($id);
+	$result = sprintf("<div class='project-container'>\n<div class='project-background'>\n<div class='project-foreground' style='width: %d%%'>%d%%</div>\n</div>\n</div>\n", $percentage, $percentage);
+	return $result;
+}
+
+
+function isProjectClosed($id) {
+	$base = dbConnect();
+	$request = sprintf("SELECT complete FROM project WHERE id='%d' LIMIT 1", intval($id));
+	$result = mysqli_query($base, $request);
+	$record = mysqli_fetch_object($result);
+	dbDisconnect($base);
+	if (intval($record->complete)) {
+		return true;
+	} else {
+		return false;
+	}
 }
 
 

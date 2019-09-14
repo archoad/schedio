@@ -177,10 +177,7 @@ input[type=reset] {
 
 table {
 	width: 80%;
-	margin-top: 5px;
-	margin-bottom: 5px;
-	margin-left: auto;
-	margin-right: auto;
+	margin: 5px auto 5px auto;
 	border-collapse: separate;
 	border-spacing: 0px 2px;
 }
@@ -199,10 +196,12 @@ th {
 	background: var(--bg2Color);
 	color: var(--textClearColor);
 	font-weight: normal;
+	padding: 5px;
 }
 
 td {
 	text-align: center;
+	padding: 2px;
 }
 
 dl {
@@ -371,32 +370,30 @@ textarea {
 }
 
 .authcont {
-	display: flex;
 	width: 60%;
-	margin-left: auto;
-	margin-right: auto;
+	margin: auto;
 	padding: 12% 0 0 0;
+	display: table;
 }
 
 .auth {
-	width: 360px;
-	flex: 50%;
+	width: 50%;
+	display: table-cell;
+	vertical-align: middle;
 }
 
 .auth img {
 	display: block;
-	margin-left: auto;
-	margin-right: auto;
-	width:230px;
+	width: 50%;
+	margin: auto;
 }
 
 .auth form {
-	position: relative;
-	background: var(--bg2Color);
-	max-width: 360px;
-	margin: 0 auto 100px auto;
+	width: 80%;
+	margin: auto;
 	padding: 45px;
 	text-align: center;
+	background: var(--bg2Color);
 	box-shadow: var(--shadowAuth);
 }
 
@@ -737,4 +734,168 @@ textarea {
 
 .vis-time-axis .vis-grid.vis-minor {
 	border-color: var(--bg1Color);
+}
+
+.project {
+	width: 90%;
+	margin: auto;
+}
+
+.project p {
+	padding: 2px;
+	text-align: justify;
+}
+
+.project h2 {
+	font-size: 16pt;
+	font-weight: bold;
+	letter-spacing: 4px;
+	color:var(--myOrangeLight);
+}
+
+.project h3 {
+	margin: 0 5%;
+	padding: 8px;
+	text-align:left;
+	font-size:10pt;
+	font-weight: normal;
+	letter-spacing: 2px;
+	color:var(--textDarkColor);
+	background: var(--bg1Color);
+}
+
+.project table {
+	padding: 5px;
+	border: 1px solid var(--textDarkColor);
+	border-radius: 4px;
+}
+
+.project tr:nth-child(even) {
+	background-color: var(--bg0Color);
+}
+
+.project tr:nth-child(odd) {
+	background-color: var(--bg3Color);
+}
+
+.project tr:nth-child(even):hover,
+.project tr:nth-child(even):active,
+.project tr:nth-child(odd):hover,
+.project tr:nth-child(odd):active {
+	background-color: var(--myOrangeLight);
+}
+
+.project th {
+	padding: 5px
+}
+
+.project td {
+	padding: 5px;
+	text-align: left;
+}
+
+.live {
+	padding: 4px 6px;
+	border-radius: 4px;
+	color: var(--textClearColor);
+	background: var(--myGreenDark);
+}
+
+.complete {
+	padding: 4px 6px;
+	border-radius: 4px;
+	color: var(--textClearColor);
+	background: var(--myOrangeDark);
+}
+
+.finished {
+	padding: 4px 6px;
+	border-radius: 4px;
+	color: var(--textClearColor);
+	background: var(--myRedDark);
+}
+
+.project_plus {
+	padding: 0 5px;
+	font-size: 16px;
+	border-radius: 50%;
+	color: var(--textClearColor);
+	background-color: var(--myGreenLight);
+	box-shadow: var(--shadowAuth);
+}
+
+.project_minus {
+	padding: 0 7px;
+	font-size: 16px;
+	border-radius: 50%;
+	color: var(--textClearColor);
+	background-color: var(--myGreenLight);
+	box-shadow: var(--shadowAuth);
+}
+
+.project_plus:hover,
+.project_minus:hover {
+	box-shadow: var(--shadowHover);
+}
+
+.task {
+	width: 90%;
+	margin: auto;
+}
+
+.task input[type="submit"] {
+	padding: 6px 10px;
+	border: none;
+	font-size: 16px;
+	border-radius: 50%;
+	color: var(--textClearColor);
+	background-color: var(--myBlueLight);
+	box-shadow: var(--shadowAuth);
+}
+
+.task input[type="submit"]:hover {
+	box-shadow: var(--shadowHover);
+}
+
+.project-container {
+	width: 250px;
+	padding: 5px 20px;
+	margin: auto;
+}
+
+.project-background {
+	width: 100%;
+	text-align: center;
+	padding: 5px 5px;
+	border-width: 1px;
+	border-style: solid;
+	border-color: var(--bg1Color);
+	border-radius: 4px;
+}
+
+.project-foreground {
+	text-align: center;
+	padding: 5px;
+	color: var(--textClearColor);
+	background-color: var(--myRedLight);
+}
+
+.task-container {
+	width: 90px;
+	padding: 0 10px;
+	margin: auto;
+}
+
+.task-background {
+	width: 100%;
+	text-align: center;
+	padding: 2px 2px;
+	background-color: var(--bg2Color);
+}
+
+.task-foreground {
+	text-align: center;
+	padding: 2px;
+	color: var(--textClearColor);
+	background-color: var(--myRedLight);
 }

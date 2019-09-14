@@ -31,7 +31,7 @@ where table_schema='schedio' ";
 	}
 	$tableNames = rtrim($tableNames, ', ');
 	$actions = ['CHECK', 'OPTIMIZE', 'REPAIR', 'ANALYZE'];
-
+	printf("<div class='project'>\n");
 	foreach ($actions as $value) {
 		$request = sprintf("%s TABLE %s", $value, $tableNames);
 		if ($result = mysqli_query($base, $request)) {
@@ -45,6 +45,7 @@ where table_schema='schedio' ";
 			printf("%s: %s\n", mysqli_errno($base), mysqli_error($base));
 		}
 	}
+	printf("</div>\n");
 	dbDisconnect($base);
 }
 

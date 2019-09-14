@@ -41,3 +41,20 @@ function champs_ok(form) {
 	}
 	return true;
 }
+
+
+function password_ok(form) {
+	if (form.new1.value.length < 6) {
+		myAlert('Le mot de passe doit contenir plus de 6 caractères', form.new1);
+		return false;
+	}
+	if (form.new1.value.match(/^[a-zA-Z0-9]*$/) != form.new1.value) {
+		myAlert('Le mot de passe ne doit contenir que des caractères alphanumériques', form.new1);
+		return false;
+	}
+	if (form.new1.value != form.new2.value) {
+		myAlert('Erreur de saisie', form.new2);
+		return false;
+	}
+	return true;
+}
