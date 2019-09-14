@@ -64,7 +64,9 @@ function selectProjectModif() {
 	printf("Projet:&nbsp;\n<select name='project' id='project'>\n");
 	printf("<option selected='selected' value=''>&nbsp;</option>\n");
 	while($row = mysqli_fetch_object($result)) {
-		printf("<option value='%s'>%s</option>\n", $row->id, traiteStringFromBDD($row->nom));
+		if (!intval($row->complete)) {
+			printf("<option value='%s'>%s</option>\n", $row->id, traiteStringFromBDD($row->nom));
+		}
 	}
 	printf("</select>\n");
 	printf("</td>\n</tr>\n</table>\n</fieldset>\n");
@@ -221,7 +223,12 @@ function displayHead() {
 	printf("</tr>\n<tr>\n");
 	printf("<th>Début</th><td>%s</td><th>Fin</th><td>%s</td>\n", displayDate($record->datedebut), displayDate($record->datefin));
 	printf("</tr>\n<tr>\n");
-	printf("<th>Durée</th><td>%s</td><th>Temps restant</th><td>%s</td>\n", computeDuration($record->datedebut, $record->datefin), computeDuration(strftime("%Y-%m-%d", time()), $record->datefin));
+	printf("<th>Durée</th><td>%s</td>", computeDuration($record->datedebut, $record->datefin));
+	if (intval($record->complete)) {
+		printf("<th colspan='2'>&nbsp;</th>\n");
+	} else {
+		printf("<th>Temps restant</th><td>%s</td>\n", computeDuration(strftime("%Y-%m-%d", time()), $record->datefin));
+	}
 	printf("</tr></table></div>\n");
 }
 
