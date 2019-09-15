@@ -790,27 +790,36 @@ textarea {
 }
 
 .project td {
-	padding: 5px;
+	padding: 2px 5px;
 	text-align: left;
 }
 
 .live {
+	width: 80%;
+	margin: auto;
 	padding: 4px 6px;
 	border-radius: 4px;
+	text-align: center;
 	color: var(--textClearColor);
 	background: var(--myGreenDark);
 }
 
 .complete {
+	width: 80%;
+	margin: auto;
 	padding: 4px 6px;
 	border-radius: 4px;
+	text-align: center;
 	color: var(--textClearColor);
 	background: var(--myOrangeDark);
 }
 
 .finished {
+	width: 80%;
+	margin: auto;
 	padding: 4px 6px;
 	border-radius: 4px;
+	text-align: center;
 	color: var(--textClearColor);
 	background: var(--myRedDark);
 }
@@ -833,8 +842,18 @@ textarea {
 	box-shadow: var(--shadowAuth);
 }
 
+.action_plus {
+	padding: 0 5px;
+	font-size: 16px;
+	border-radius: 50%;
+	color: var(--textClearColor);
+	background-color: var(--myBlueLight);
+	box-shadow: var(--shadowAuth);
+}
+
 .project_plus:hover,
-.project_minus:hover {
+.project_minus:hover,
+.action_plus:hover {
 	box-shadow: var(--shadowHover);
 }
 
@@ -859,14 +878,14 @@ textarea {
 
 .project-container {
 	width: 250px;
-	padding: 5px 20px;
+	padding: 0 20px;
 	margin: auto;
 }
 
 .project-background {
 	width: 100%;
 	text-align: center;
-	padding: 5px 5px;
+	padding: 2px;
 	border-width: 1px;
 	border-style: solid;
 	border-color: var(--bg1Color);
@@ -898,4 +917,29 @@ textarea {
 	padding: 2px;
 	color: var(--textClearColor);
 	background-color: var(--myRedLight);
+}
+
+.actions {
+	font-size: 11pt;
+	text-align: justify;
+	color: var(--textDarkColor);
+}
+
+.actions h1 {
+	font-size: 14pt;
+	text-align: left;
+	color: var(--myBlueDark);
+}
+
+.actions h2 {
+	font-size: 12pt;
+	text-align: left;
+	color: var(--myBlueLight);
+}
+
+
+.actions p, ul {
+	font-size: 10pt;
+	text-align: justify;
+	color: var(--textDarkColor);
 }

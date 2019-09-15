@@ -45,7 +45,7 @@ function createProject() {
 		printf("<option value='%d'>%s %s</option>\n", $row->id, $row->prenom, $row->nom);
 	}
 	printf("</select>\n</td>\n");
-	printf("<td>Date de début:&nbsp;<input type='date' name='datedebut' id='datedebut' min='%s' /></td>\n", date('Y-m-d', time()));
+	printf("<td>Date de début:&nbsp;<input type='date' name='datedebut' id='datedebut' min='%s' onchange='fixMinDate(this)' /></td>\n", date('Y-m-d', time()));
 	printf("<td>Date de fin:&nbsp;<input type='date' name='datefin' id='datefin' min='%s' /></td>\n", date('Y-m-d', time()));
 	printf("</tr>\n</table>\n</fieldset>\n");
 	validForms('Enregistrer', 'user.php');
@@ -105,7 +105,7 @@ function modifProject($id) {
 		printf("<option value='%d'>%s %s</option>\n", $row->id, $row->prenom, $row->nom);
 	}
 	printf("</select>\n</td>\n");
-	printf("<td>Date de début:&nbsp;<input type='date' name='datedebut' id='datedebut' min='%s' value='%s' /></td>\n", $record->datedebut, $record->datedebut);
+	printf("<td>Date de début:&nbsp;<input type='date' name='datedebut' id='datedebut' min='%s' value='%s' onchange='fixMinDate(this)' /></td>\n", $record->datedebut, $record->datedebut);
 	printf("<td>Date de fin:&nbsp;<input type='date' name='datefin' id='datefin' min='%s' value='%s' /></td>\n", $record->datedebut, $record->datefin);
 	printf("</tr>\n</table>\n</fieldset>\n");
 	validForms('Modifier', 'user.php', $back=False);
@@ -157,9 +157,9 @@ function recorProject($action) {
 function displayProjects() {
 	$base = dbConnect();
 	if (intval($_SESSION['role']) == 2) {
-		$request = sprintf("SELECT * FROM project WHERE directeur='%d' ORDER BY chapter", intval($_SESSION['uid']));
+		$request = sprintf("SELECT * FROM project WHERE directeur='%d' ORDER BY chapter ASC, complete ASC, datedebut ASC", intval($_SESSION['uid']));
 	} else {
-		$request = sprintf("SELECT * FROM project WHERE chef='%d' ORDER BY chapter", intval($_SESSION['uid']));
+		$request = sprintf("SELECT * FROM project WHERE chef='%d' ORDER BY chapter ASC, complete ASC, datedebut ASC", intval($_SESSION['uid']));
 	}
 	$result = mysqli_query($base, $request);
 	dbDisconnect($base);
@@ -182,7 +182,11 @@ function displayProjects() {
 		printf("<td>%s</td>", getUser($row->chef));
 		printf("<td>%s</td>", displayShortDate($row->datedebut));
 		printf("<td>%s</td>", displayShortDate($row->datefin));
-		printf("<td>%s</td>", projectProgressBar($row->id));
+		if ((intval($_SESSION['role']) == 3) and (intval($row->complete))) {
+			printf("<td><div class='finished'>Projet clos</div></td>");
+		} else {
+			printf("<td>%s</td>", projectProgressBar($row->id));
+		}
 		if (intval($_SESSION['role']) == 2) {
 			if (computeProjectProgress($row->id) == 100) {
 				if (intval($row->complete)) {
@@ -200,17 +204,18 @@ function displayProjects() {
 }
 
 
-function displayHead() {
+function displayProjectHead() {
 	$base = dbConnect();
 	$request = sprintf("SELECT * FROM project WHERE id='%d' LIMIT 1", intval($_SESSION['project']));
 	$result = mysqli_query($base, $request);
 	$record = mysqli_fetch_object($result);
 	dbDisconnect($base);
 	printf("<div class='project'>\n<table>\n<tr>\n");
-	printf("<th colspan='2' width='50%%'><h2>%s</h2>\n",  traiteStringFromBDD($record->nom));
-	printf("<th colspan='2' width='50%%'><p>%s</p></td>\n", traiteStringFromBDD($record->description));
+	printf("<th colspan='2' width='50%%'><h2>%s</h2></th>\n",  traiteStringFromBDD($record->nom));
+	printf("<th colspan='2' width='50%%'><p>%s</p></th>\n", traiteStringFromBDD($record->description));
 	printf("</tr>\n<tr>\n");
-	printf("<th colspan='4'>");
+	printf("<th colspan='2'>%s</th>\n",  getChapter($record->chapter));
+	printf("<th colspan='2'>");
 	if (intval($record->complete)) {
 		printf("Projet clos");
 	} else {
@@ -246,7 +251,7 @@ function addTask() {
 		printf("<form method='post' id='new_task' action='user.php?action=record_task' onsubmit='return champs_ok(this)'>\n");
 		printf("<table>\n<tr>\n");
 		printf("<td><input type='text' size='40' maxlength='60' name='nom' id='nom' placeholder='Tâche' /></td>\n");
-		printf("<td>De&nbsp;<input type='date' name='datedebut' id='datedebut' min='%s' max='%s' /></td>\n", $record->datedebut, $record->datefin);
+		printf("<td>De&nbsp;<input type='date' name='datedebut' id='datedebut' min='%s' max='%s' onchange='fixMinDate(this)' /></td>\n", $record->datedebut, $record->datefin);
 		printf("<td>A&nbsp;<input type='date' name='datefin' id='datefin' min='%s' max='%s' /></td>\n", $record->datedebut, $record->datefin);
 		printf("<td><input type='submit' value='+'></td>\n");
 		printf("</tr>\n</table>\n");
@@ -273,7 +278,7 @@ function displayTasks($data) {
 		if ($closed) {
 			printf("<td>&nbsp;</td>\n");
 		} else {
-			printf("<td style='text-align:center;'><a class='project_plus' href='user.php?action=update_action&value=%d'>+</a></td>\n", $row->id);
+			printf("<td style='text-align:center;'><a class='action_plus' href='user.php?action=actions&value=%d'>+</a></td>\n", $row->id);
 		}
 		printf("<td><div style='display: table; margin: auto;'>");
 		if (!$closed) {
@@ -308,18 +313,20 @@ function tasksManagement() {
 
 
 function projectDetail() {
-	displayHead();
+	displayProjectHead();
 	tasksManagement();
 }
 
 
 function recorTask($action) {
 	$base = dbConnect();
-	$id = intval($_GET['value']);
-	$request = sprintf("SELECT avancement FROM task WHERE id='%d' LIMIT 1", $id);
-	$result = mysqli_query($base,$request);
-	$record = mysqli_fetch_object($result);
-	$progress = intval($record->avancement);
+	if (in_array($action, array('increase', 'decrease'))) {
+		$id = intval($_GET['value']);
+		$request = sprintf("SELECT avancement FROM task WHERE id='%d' LIMIT 1", $id);
+		$result = mysqli_query($base,$request);
+		$record = mysqli_fetch_object($result);
+		$progress = intval($record->avancement);
+	}
 	$projet = intval($_SESSION['project']);
 	$nom = isset($_POST['nom']) ? traiteStringToBDD($_POST['nom']) : NULL;
 	$datedebut = isset($_POST['datedebut']) ? $_POST['datedebut'] : NULL;
@@ -354,6 +361,81 @@ function recorTask($action) {
 	}
 	dbDisconnect($base);
 }
+
+
+function taskDetail() {
+	displayTaskHead();
+	actionsManagement();
+}
+
+
+function displayTaskHead() {
+	$base = dbConnect();
+	$request = sprintf("SELECT * FROM task WHERE id='%d' LIMIT 1", intval($_SESSION['task']));
+	$result = mysqli_query($base, $request);
+	$record = mysqli_fetch_object($result);
+	dbDisconnect($base);
+	printf("<div class='project'><table><tr>");
+	printf("<td>%s</td>",  traiteStringFromBDD($record->nom));
+	printf("<td>Début: %s</td>", displayDate($record->datedebut));
+	printf("<td>Fin: %s</td>", displayDate($record->datefin));
+	printf("<td>Durée: %s</td>", computeDuration($record->datedebut, $record->datefin));
+	printf("<td><div style='display: table; margin: auto;'>");
+	printf("<div style='display: table-cell;'>Avancement</div>");
+	printf("<div style='display: table-cell;'>%s</div>", taskProgressBar($record->id));
+	printf("</div></td>\n");
+	printf("</tr></table></div>");
+}
+
+
+function getActionFilename() {
+	global $cheminMD;
+	$base = dbConnect();
+	$request = sprintf("SELECT * FROM task WHERE id='%d' LIMIT 1", intval($_SESSION['task']));
+	$result = mysqli_query($base, $request);
+	$record = mysqli_fetch_object($result);
+	dbDisconnect($base);
+	return sprintf("%s%s_task%d.md", $cheminMD, str_replace('-', '', $record->datedebut), $_SESSION['task']);
+}
+
+
+function actionsManagement() {
+	$fileName = getActionFilename();
+	if ($handle = fopen($fileName, "a+")) {
+		printf("<div class='project'>\n");
+		printf("<form method='post' id='new_action' action='user.php?action=record_action'>\n");
+		printf("<table>\n<tr>\n");
+		if (filesize($fileName)) {
+			$data = fread($handle, filesize($fileName));
+			printf("<td><div class='actions'><textarea name='description' id='description'>%s</textarea></div></td>\n", $data);
+		} else {
+			printf("<td><div class='actions'><textarea name='description' id='description'></textarea></div></td>\n");
+		}
+		fclose($handle);
+		printf("</tr><tr>\n");
+		printf("<td style='text-align:center;'><input type='submit' value='Enregistrer'></input></td>\n");
+		printf("</tr>\n</table>\n</form>\n</div>\n");
+		printf("<link rel='stylesheet' href='js/simplemde.min.css'>");
+		printf("<script type='text/javascript' src='js/simplemde.min.js'></script>");
+		printf("<script>var simplemde = new SimpleMDE({ element: document.getElementById('description') });</script>");
+	} else {
+		linkMsg("user.php", "Erreur d'ouverture du fichier.", "alert.png");
+		footPage();
+	}
+}
+
+
+function recordAction() {
+	$fileName = getActionFilename();
+	if ($handle = fopen($fileName, "w")) {
+		fwrite($handle, $_POST['description']);
+		fclose($handle);
+		return true;
+	} else {
+		return false;
+	}
+}
+
 
 
 

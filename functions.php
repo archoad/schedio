@@ -63,6 +63,9 @@ ini_set('session.cookie_httponly', 1);
 ini_set('session.entropy_length', 32);
 ini_set('session.entropy_file', '/dev/urandom');
 ini_set('session.hash_function', 'sha256');
+
+$server_path = dirname($_SERVER['SCRIPT_FILENAME']);
+$cheminMD = sprintf("%s/data/", $server_path);
 // --------------------
 
 

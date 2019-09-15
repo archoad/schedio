@@ -108,9 +108,14 @@ if (isset($_GET['action'])) {
 		}
 		break;
 
-	case 'update_action':
-		print_r($_GET['value']);
-		footPage();
+	case 'actions':
+		if (isset($_GET['value'])) {
+			$_SESSION['task'] = intval($_GET['value']);
+			taskDetail();
+			footPage($script."?action=mgmt&value=".$_SESSION['project'], "Accueil");
+		} else {
+			header("Location: ".$script."?action=mgmt");
+		}
 		break;
 
 	case 'mgmt':
@@ -133,6 +138,15 @@ if (isset($_GET['action'])) {
 			}
 		} else {
 			header("Location: ".$script."?action=project_mgmt");
+		}
+		break;
+
+	case 'record_action':
+		if (recordAction()) {
+			header("Location: ".$script."?action=mgmt&value=".$_SESSION['project']);
+		} else {
+			linkMsg($script, "Erreur d'enregistrement", "alert.png");
+			footPage();
 		}
 		break;
 

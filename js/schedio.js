@@ -58,3 +58,8 @@ function password_ok(form) {
 	}
 	return true;
 }
+
+
+function fixMinDate(elt) {
+	document.getElementById('datefin').min = elt.value;
+}
