@@ -30,10 +30,24 @@ session_start();
 
 switch ($_SESSION['mode']) {
 	case 'standard':
+		$bg0Color = '#eae7dc';
+		$bg1Color = '#d8c3a5';
+		$bg2Color = '#8e8d8a';
+		$myBlueLight = '#74b4e8';
+		$myBlueDark = '#51a4e8';
+		$myOrangeLight = '#e8b874';
+		$myOrangeDark = '#e8a951';
+		$myRedLight = '#e88074';
+		$myRedDark = '#e86051';
+		$myGreenLight = '#74e874';
+		$myGreenDark = '#51e851';
+		break;
+	case 'old':
 		$bg0Color = '#e9e4db';
 		$bg1Color = '#9eb1bb';
 		$bg2Color = '#4d636f';
-		$bg3Color = '#bab6af';
+		$myBlueLight = '#337ab7';
+		$myBlueDark = '#286090';
 		$myOrangeLight = '#f0ad4e';
 		$myOrangeDark = '#ec971f';
 		$myRedLight = '#d9534f';
@@ -45,7 +59,8 @@ switch ($_SESSION['mode']) {
 		$bg0Color = '#ffffff';
 		$bg1Color = '#ffcb05';
 		$bg2Color = '#003da5';
-		$bg3Color = '#ffffff';
+		$myBlueLight = '#337ab7';
+		$myBlueDark = '#286090';
 		$myOrangeLight = '#ffcb05';
 		$myOrangeDark = '#ffcb05';
 		$myRedLight = '#e56a54';
@@ -53,19 +68,8 @@ switch ($_SESSION['mode']) {
 		$myGreenLight = '#5cb85c';
 		$myGreenDark = '#5cb85c';
 		break;
-	default:
-		$bg0Color = '#e9e4db';
-		$bg1Color = '#9eb1bb';
-		$bg2Color = '#4d636f';
-		$bg3Color = '#bab6af';
-		$myOrangeLight = '#f0ad4e';
-		$myOrangeDark = '#ec971f';
-		$myRedLight = '#d9534f';
-		$myRedDark = '#c9302c';
-		$myGreenLight = '#5cb85c';
-		$myGreenDark = '#449d44';
-		break;
 }
+
 ?>
 
 @charset "utf-8";
@@ -74,9 +78,8 @@ switch ($_SESSION['mode']) {
 	--bg0Color: <?php echo $bg0Color; ?>;
 	--bg1Color: <?php echo $bg1Color; ?>;
 	--bg2Color: <?php echo $bg2Color; ?>;
-	--bg3Color: <?php echo $bg3Color; ?>;
-	--myBlueLight: #337ab7;
-	--myBlueDark: #286090;
+	--myBlueLight: <?php echo $myBlueLight; ?>;
+	--myBlueDark: <?php echo $myBlueDark; ?>;
 	--myOrangeLight: <?php echo $myOrangeLight; ?>;
 	--myOrangeDark: <?php echo $myOrangeDark; ?>;
 	--myRedLight: <?php echo $myRedLight; ?>;
@@ -665,7 +668,7 @@ textarea {
 .assess dl {
 	margin-left: 4%;
 	padding: 5px;
-	background-color: var(--bg3Color);
+	background-color: var(--bg2Color);
 }
 
 .assess dt {
@@ -750,7 +753,7 @@ textarea {
 	font-size: 16pt;
 	font-weight: bold;
 	letter-spacing: 4px;
-	color:var(--myOrangeLight);
+	color:var(--myOrangeDark);
 }
 
 .project h3 {
@@ -761,7 +764,7 @@ textarea {
 	font-weight: normal;
 	letter-spacing: 2px;
 	color:var(--textDarkColor);
-	background: var(--bg1Color);
+	background: var(--bg2Color);
 }
 
 .project table {
@@ -775,7 +778,7 @@ textarea {
 }
 
 .project tr:nth-child(odd) {
-	background-color: var(--bg3Color);
+	background-color: var(--bg1Color);
 }
 
 .project tr:nth-child(even):hover,
@@ -942,4 +945,170 @@ textarea {
 	font-size: 10pt;
 	text-align: justify;
 	color: var(--textDarkColor);
+}
+
+
+.kanban {
+	display: grid;
+	width:80%;
+	height: 70%;
+	margin: 20px auto;
+	grid-template-columns: repeat(4, 1fr);
+	grid-column-gap: 10px;
+}
+
+.kanban_title {
+	width:95%;
+	margin: 5px auto;
+	padding: 8px;
+	border-radius: 5px;
+	text-align: center;
+}
+
+
+.kanban_title_red {
+	background: var(--myRedLight);
+}
+
+
+.kanban_title_orange {
+	background: var(--myOrangeLight);
+}
+
+
+.kanban_title_blue {
+	background: var(--myBlueLight);
+}
+
+
+.kanban_title_green {
+	background: var(--myGreenLight);
+}
+
+
+.dropper {
+	width:100%;
+	border-radius: 4px;
+	overflow-y: auto;
+	transition: all 200ms linear;
+}
+
+
+.drop_red_line {
+	border: 1px solid var(--myRedLight);
+}
+
+
+.drop_blue_line {
+	border: 1px solid var(--myBlueLight);
+}
+
+
+.drop_orange_line {
+	border: 1px solid var(--myOrangeLight);
+}
+
+
+.drop_green_line {
+	border: 1px solid var(--myGreenLight);
+}
+
+
+.drop_hover {
+	border-width: 2px;
+}
+
+
+.draggable {
+	width:90%;
+	margin: 5px auto;
+	padding: 5px;
+	border: 1px solid var(--bg2Color);
+	border-radius: 5px;
+	transition: all 200ms linear;
+	user-select: none;
+}
+
+
+.draggable-name {
+	width:100%;
+	padding: 2px;
+	text-align: center;
+	border-radius: 5px;
+	color: var(--textClearColor);
+	background-color: var(--bg2Color);
+	cursor: move;
+}
+
+
+.add_kanban {
+	padding: 0 5px;
+	font-size: 16px;
+	border-radius: 50%;
+	color: var(--textClearColor);
+	background-color: var(--myBlueLight);
+	cursor: pointer;
+}
+
+
+.modal {
+	display: none;
+	position: fixed;
+	z-index: 1;
+	padding: 5%;
+	left: 0;
+	top: 0;
+	width: 100%;
+	height: 100%;
+	overflow-y: auto;
+	background-color: rgba(0,0,0,0.6);
+}
+
+
+.modal_content {
+	background-color: var(--bg0Color);
+	margin: auto;
+	padding: 10px;
+	width: 60%;
+	border-radius: 5px;
+}
+
+
+.close {
+	color: var(--textDarkColor);
+	float: right;
+	font-size: 25px;
+	font-weight: bold;
+	cursor: pointer;
+}
+
+
+.kanban_description {
+	width:95%;
+	margin: 2px auto;
+	padding: 5px;
+	text-align: jusitfy;
+	color: var(--textDarkColor);
+	border-radius: 4px;
+}
+
+
+.kanban_date {
+	width:95%;
+	margin: 2px auto;
+	padding: 5px;
+	text-align: center;
+	color: var(--textDarkColor);
+	border-radius: 4px;
+}
+
+
+.kanban_date_alert {
+	width:95%;
+	margin: 2px auto;
+	padding: 5px;
+	text-align: center;
+	color: var(--textClearColor);
+	background: var(--myRedDark);
+	border-radius: 4px;
 }

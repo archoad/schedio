@@ -150,6 +150,29 @@ if (isset($_GET['action'])) {
 		}
 		break;
 
+	case 'kanban':
+		displayKanban();
+		footPage($script, "Accueil");
+		break;
+
+	case 'add_kanban':
+		if (recordKanban('add')) {
+			header("Location: ".$script."?action=kanban");
+		} else {
+			linkMsg($script, "Erreur d'enregistrement", "alert.png");
+			footPage();
+		}
+		break;
+
+	case 'update_kanban':
+		if (recordKanban('update')) {
+			header("Location: ".$script."?action=kanban");
+		} else {
+			linkMsg($script, "Erreur d'enregistrement", "alert.png");
+			footPage();
+		}
+		break;
+
 	default:
 		menuUser();
 		footPage();

@@ -134,6 +134,8 @@ function recorProject($action) {
 		case 'close':
 			$request = sprintf("UPDATE project SET complete='1' WHERE id='%d'", $_GET['value']);
 			break;
+		default:
+			return false;
 	}
 	if (mysqli_query($base, $request)) {
 		switch ($action) {
@@ -437,6 +439,103 @@ function recordAction() {
 }
 
 
+function displayKanbanTask($id) {
+	$base = dbConnect();
+	$request = sprintf("SELECT * FROM kanban WHERE id='%d' LIMIT 1", $id);
+	$result = mysqli_query($base, $request);
+	$record = mysqli_fetch_object($result);
+	dbDisconnect($base);
+	$today = date('Y-m-d', time());
+	printf("<div id='task%d' class='draggable'>", $record->id);
+	printf("<div class='draggable-name'>%s - P%d</div>", $record->nom, intval($record->priority));
+	printf("<p class='kanban_description'>%s</p>", $record->description);
+	$interval = date_diff(date_create($record->datefin), date_create($today));
+	if ($interval->invert) {
+		printf("<p class='kanban_date'>du %s au %s (%s)</p>", displayVeryShortDate($record->datedebut), displayVeryShortDate($record->datefin), computeDuration($record->datedebut, $record->datefin));
+	} else {
+		printf("<p class='kanban_date_alert'>du %s au %s (%s)</p>", displayVeryShortDate($record->datedebut), displayVeryShortDate($record->datefin), computeDuration($record->datedebut, $record->datefin));
+	}
+	printf("</div>");
+}
+
+
+function displayKanban() {
+	$base = dbConnect();
+	$request = sprintf("SELECT * FROM progress");
+	$result = mysqli_query($base, $request);
+	printf("<div class='kanban'>\n");
+	while($row = mysqli_fetch_object($result)) {
+		printf("<div id='%s' class='dropper %s'>\n", traiteStringFromBDD($row->nom), $row->drop_color);
+		if (intval($row->id) == 1) {
+			printf("<div class='kanban_title %s'>%s", $row->drag_color, traiteStringFromBDD($row->affichage));
+			printf("<a class='add_kanban' style='float: right;' onclick='displayModal();'>+</a></div>");
+		} else if (intval($row->id) == 3) {
+			$req_kanban = sprintf("SELECT * FROM kanban WHERE progress='%d' AND user='%d'", $row->id, $_SESSION['uid']);
+			$res_kanban = mysqli_query($base, $req_kanban);
+			printf("<div class='kanban_title %s'>%s %d/3</div>", $row->drag_color, traiteStringFromBDD($row->affichage), mysqli_num_rows($res_kanban));
+		} else {
+			printf("<div class='kanban_title %s'>%s</div>", $row->drag_color, traiteStringFromBDD($row->affichage));
+		}
+		$req_kanban = sprintf("SELECT * FROM kanban WHERE progress='%d' AND user='%d' ORDER BY priority ASC, datefin ASC", $row->id, $_SESSION['uid']);
+		$res_kanban = mysqli_query($base, $req_kanban);
+		while($row_kanban = mysqli_fetch_object($res_kanban)) {
+			displayKanbanTask($row_kanban->id);
+		}
+		printf("</div>");
+	}
+	printf("</div>\n");
+	dbDisconnect($base);
+
+	printf("<div id='kanban_form' class='modal'>");
+	printf("<div class='modal_content'>");
+	printf("<form method='post' id='new_kanban' action='user.php?action=add_kanban' onsubmit='return kanban_ok(this)'>\n");
+	printf("<fieldset>\n<legend>Ajout d'une tâche</legend>\n");
+	printf("<table>\n<tr><td colspan='2'>\n");
+	printf("<input type='text' size='40' maxlength='40' name='nom' id='nom' placeholder='Nom de la tâche' />\n");
+	printf("</td></tr>\n<tr><td colspan='2'>\n");
+	printf("<textarea name='description' id='description' cols='60' rows='3' placeholder='Description'></textarea>\n");
+	printf("</td></tr>\n<tr>\n");
+	printf("<td>Date de fin:&nbsp;<input type='date' name='datefin' id='datefin' min='%s' /></td>\n", date('Y-m-d', time()));
+	printf("<td>Priorité:&nbsp;<select name='priority' id='priority'>\n");
+	printf("<option selected='selected' value=''>&nbsp;</option>\n");
+	for ($i=1; $i<=5; $i++) {
+		printf("<option value='%d'>%s</option>\n", $i, $i);
+	}
+	printf("</select>\n</td>");
+	printf("</tr>\n</table>\n</fieldset>\n");
+	validForms('Enregistrer', 'user.php?action=kanban');
+	printf("</form>\n");
+	printf("</div></div>");
+}
+
+
+function recordKanban($action) {
+	$base = dbConnect();
+	$user = intval($_SESSION['uid']);
+	$progress = 1;
+	$nom = isset($_POST['nom']) ? traiteStringToBDD($_POST['nom']) : NULL;
+	$description = isset($_POST['description']) ? traiteStringToBDD($_POST['description']) : NULL;
+	$datedebut = date('Y-m-d', time());
+	$datefin = isset($_POST['datefin']) ? $_POST['datefin'] : NULL;
+	$priority = isset($_POST['priority']) ? intval($_POST['priority']) : NULL;
+	switch ($action) {
+		case 'add':
+			$request = sprintf("INSERT INTO kanban (user, progress, nom, description, datedebut, datefin, priority) VALUES ('%d', '%d', '%s', '%s', '%s', '%s', '%d')", $user, $progress, $nom, $description, $datedebut, $datefin, $priority);
+			break;
+		case 'update':
+			$request = sprintf("SELECT id FROM progress WHERE nom='%s' LIMIT 1", $_GET['progress']);
+			$result = mysqli_query($base, $request);
+			$record = mysqli_fetch_object($result);
+			$request = sprintf("UPDATE kanban SET progress='%d' WHERE id='%d'", $record->id, $_GET['task']);
+			break;
+	}
+	if (mysqli_query($base, $request)) {
+		return true;
+	} else {
+		return false;
+	}
+	dbDisconnect($base);
+}
 
 
 

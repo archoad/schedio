@@ -37,7 +37,7 @@ $passwd = 'webphpsql';
 $appli_titre = ("Schedio - Gestion de projet");
 $appli_titre_short = ("Schedio");
 // Thème CSS
-$mode = 'standard'; // 'laposte' , 'standard'
+$mode = 'standard';
 // Image accueil
 $auhtPict = 'pict/accueil.png';
 // --------------------
@@ -206,6 +206,7 @@ function headPage($titre, $sousTitre=''){
 	header("Content-type: text/html; charset=utf-8");
 	printf("<!DOCTYPE html>\n<html lang='fr-FR'>\n<head>\n");
 	printf("<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />\n");
+	printf("<meta http-equiv='refresh' content='600'>");
 	printf("<link rel='icon' type='image/png' href='pict/favicon.png' />\n");
 	printf("<link href='styles.php' rel='StyleSheet' type='text/css' media='all' />\n");
 	printf("<title>%s</title>\n", $titre);
@@ -331,6 +332,7 @@ function menuUser() {
 	printf("<div class='row'>\n");
 	printf("<div class='column left'>\n");
 	linkMsg("user.php?action=project_mgmt", "Gestion de projet", "project_mgmt.png", 'menu');
+	linkMsg("user.php?action=kanban", "Gestion du temps (Kanban)", "kanban.png", 'menu');
 	linkMsg("user.php?action=password", "Changer de mot de passe", "cadenas.png", 'menu');
 	printf("</div>\n<div class='column right'>\n");
 	if ($_SESSION['role']==='2') {
@@ -379,6 +381,11 @@ function displayDate($date) {
 
 function displayShortDate($date) {
 	return strftime("%d %b %Y", strtotime($date));
+}
+
+
+function displayVeryShortDate($date) {
+	return strftime("%d %b", strtotime($date));
 }
 
 
