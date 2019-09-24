@@ -173,6 +173,28 @@ if (isset($_GET['action'])) {
 		}
 		break;
 
+	case 'modify_kanban':
+		if (recordKanban('modify')) {
+			header("Location: ".$script."?action=kanban");
+		} else {
+			linkMsg($script, "Erreur d'enregistrement", "alert.png");
+			footPage();
+		}
+		break;
+
+	case 'del_kanban':
+		if (isset($_GET['kid'])) {
+			if (recordKanban('delete')) {
+				header("Location: ".$script."?action=kanban");
+			} else {
+				linkMsg($script, "Erreur d'effacement", "alert.png");
+				footPage();
+			}
+		} else {
+			header("Location: ".$script."?action=kanban");
+		}
+		break;
+
 	default:
 		menuUser();
 		footPage();

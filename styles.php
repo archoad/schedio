@@ -722,7 +722,7 @@ textarea {
 }
 
 .vis-time-axis.vis-background {
-	background-color: var(--$bg0Color);
+	background-color: var(--bg0Color);
 }
 
 .vis-item,
@@ -1032,7 +1032,7 @@ textarea {
 
 .draggable-name {
 	width:100%;
-	padding: 2px;
+	padding: 5px;
 	text-align: center;
 	border-radius: 5px;
 	color: var(--textClearColor);
@@ -1048,6 +1048,18 @@ textarea {
 	color: var(--textClearColor);
 	background-color: var(--myBlueLight);
 	cursor: pointer;
+	float: right;
+}
+
+
+.del_kanban {
+	padding: 0 4px;
+	font-size: 12px;
+	border-radius: 50%;
+	color: var(--textClearColor);
+	background-color: var(--myRedLight);
+	cursor: pointer;
+	float: right;
 }
 
 
@@ -1087,9 +1099,9 @@ textarea {
 	width:95%;
 	margin: 2px auto;
 	padding: 5px;
-	text-align: jusitfy;
+	font-size: 8pt;
+	text-align: justify;
 	color: var(--textDarkColor);
-	border-radius: 4px;
 }
 
 
@@ -1097,18 +1109,21 @@ textarea {
 	width:95%;
 	margin: 2px auto;
 	padding: 5px;
-	text-align: center;
+	text-align: left;
 	color: var(--textDarkColor);
-	border-radius: 4px;
+}
+
+
+.kanban_date_normal {
+	border-left: 8px solid var(--myGreenLight);
+}
+
+
+.kanban_date_limit {
+	border-left: 8px solid var(--myOrangeLight);
 }
 
 
 .kanban_date_alert {
-	width:95%;
-	margin: 2px auto;
-	padding: 5px;
-	text-align: center;
-	color: var(--textClearColor);
-	background: var(--myRedDark);
-	border-radius: 4px;
+	border-left: 8px solid var(--myRedLight);
 }

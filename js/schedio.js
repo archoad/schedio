@@ -46,7 +46,8 @@ function champs_ok(form) {
 function kanban_ok(form) {
 	for(i=0; i<form.elements.length; i++) {
 		if (form.elements[i].value === '') {
-			alert('Formulaire incomplet', form.elements[i]);
+			alert('Formulaire incomplet');
+			form.elements[i].style.backgroundColor='#FFC7C7';
 			return false;
 		}
 	}
@@ -76,15 +77,35 @@ function fixMinDate(elt) {
 }
 
 
-function displayModal() {
-	var modal = document.getElementById('kanban_form');
+function base64DecodeUnicode(str) {
+	percentEncodedStr = atob(str).split('').map(function(c) {
+		return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+	}).join('');
+	return decodeURIComponent(percentEncodedStr);
+}
+
+
+function displayAddModal() {
+	var modal = document.getElementById('add_kanban_form');
 	modal.style.display = 'block';
 }
 
 
-function hideModal() {
-	var modal = document.getElementById('kanban_form');
-	modal.style.display = 'none';
+function displayModifyModal(data) {
+	items = base64DecodeUnicode(data).split(':');
+	var modal = document.getElementById('modify_kanban_form');
+	document.getElementById('uid').value = items[0];
+	document.getElementById('unom').value = items[1];
+	document.getElementById('udescription').value = items[2];
+	document.getElementById('udatefin').value = items[3];
+	document.getElementById('upriority').value = items[4];
+	modal.style.display = 'block';
+}
+
+
+function confirmDelete() {
+	var answer = confirm("Voulez-vous supprimer cette tâche?");
+	return answer;
 }
 
 
