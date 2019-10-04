@@ -104,7 +104,7 @@ function infoSession() {
 	$infoDay = sprintf("%s - %s", $_SESSION['day'], $_SESSION['hour']);
 	$infoNav = sprintf("%s - %s - %s", $_SESSION['os'], $_SESSION['browser'], $_SESSION['ipaddr']);
 	$infoUser = sprintf("Connecté en tant que <b>%s %s</b>", $_SESSION['prenom'], $_SESSION['nom']);
-	$logoff = sprintf("<a href='schedio.php?action=disconnect'>Déconnexion&nbsp;<img border='0' alt='logoff' src='pict/turnoff.png' width='10'></a>");
+	$logoff = sprintf("<a href='schedio.php?action=disconnect'>Déconnexion&nbsp;<img alt='logoff' src='pict/turnoff.png' width='10'></a>");
 	return sprintf("Powered by σχέδιο - %s - %s - %s - %s", $infoDay, $infoNav, $infoUser, $logoff);
 }
 
@@ -208,6 +208,7 @@ function headPage($titre, $sousTitre=''){
 	printf("<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />\n");
 	printf("<meta http-equiv='refresh' content='600'>");
 	printf("<link rel='icon' type='image/png' href='pict/favicon.png' />\n");
+	printf("<link href='js/vis-timeline-graph2d.min.css' rel='stylesheet' type='text/css' media='all' />\n");
 	printf("<link href='styles.php' rel='StyleSheet' type='text/css' media='all' />\n");
 	printf("<title>%s</title>\n", $titre);
 	printf("</head>\n<body>\n<h1>%s</h1>\n", $titre);
@@ -298,7 +299,7 @@ function changePassword($script) {
 		validForms('Enregistrer', $script);
 		printf("</form>\n");
 	} else {
-		linkMsg("#", "Erreur de compte.", "alert.png");
+		linkMsg($script, "Erreur de compte.", "alert.png");
 		footPage($script, "Accueil");
 	}
 }
@@ -335,6 +336,7 @@ function menuUser() {
 	linkMsg("user.php?action=kanban", "Gestion du temps (Kanban)", "kanban.png", 'menu');
 	linkMsg("user.php?action=password", "Changer de mot de passe", "cadenas.png", 'menu');
 	printf("</div>\n<div class='column right'>\n");
+	linkMsg("user.php?action=gantt", "Diagramme de Gantt", "gantt.png", 'menu');
 	if ($_SESSION['role']==='2') {
 		linkMsg("user.php?action=new_project", "Ajouter un projet", "add_project.png", 'menu');
 		linkMsg("user.php?action=modif_project", "Modifier un projet", "modif_project.png", 'menu');

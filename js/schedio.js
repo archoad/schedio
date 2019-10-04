@@ -150,7 +150,9 @@ function confirmDelete() {
 				clonedElement = target.appendChild(clonedElement);
 				dndHandler.applyDragEvents(clonedElement);
 				draggedElement.parentNode.removeChild(draggedElement);
-				var new_href='user.php?action=update_kanban&progress='+target.id+'&task='+data.substring(4);
+				var url = window.location.pathname;
+				var filename = url.substring(url.lastIndexOf('/')+1);
+				var new_href=filename+'?action=update_kanban&progress='+target.id+'&task='+data.substring(4);
 				window.location.assign(new_href);
 			}, false);
 		}

@@ -23,7 +23,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 include("functions.php");
 include("funct_user.php");
 session_start();
-$authorizedRole = array('2', '3');
+$authorizedRole = array('2', '3', '4');
 isSessionValid($authorizedRole);
 headPage($appli_titre, sprintf("%s %s - %s", $_SESSION['prenom'], $_SESSION['nom'], getRole($_SESSION['role'])));
 $script = basename($_SERVER['PHP_SELF']);
@@ -118,6 +118,16 @@ if (isset($_GET['action'])) {
 		}
 		break;
 
+	case 'read_actions':
+		if (isset($_GET['value'])) {
+			$_SESSION['task'] = intval($_GET['value']);
+			taskDetail();
+			footPage($script."?action=mgmt&value=".$_SESSION['project'], "Accueil");
+		} else {
+			header("Location: ".$script."?action=mgmt");
+		}
+		break;
+
 	case 'mgmt':
 		if (isset($_GET['value'])) {
 			$_SESSION['project'] = intval($_GET['value']);
@@ -195,6 +205,11 @@ if (isset($_GET['action'])) {
 		}
 		break;
 
+	case 'gantt':
+		displayGantts();
+		footPage($script, "Accueil");
+		break;
+
 	default:
 		menuUser();
 		footPage();
@@ -208,4 +223,6 @@ if (isset($_GET['action'])) {
 
 ?>
 
-<script type='text/javascript' src='js/schedio.js'></script>
+<script src='js/schedio.js'></script>
+<script src='js/graphs.js'></script>
+<script src='js/vis-timeline-graph2d.min.js'></script>

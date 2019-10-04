@@ -721,39 +721,39 @@ textarea {
 	border-right: 2px solid var(--myRedLight);
 }
 
-.vis-time-axis.vis-background {
-	background-color: var(--bg0Color);
-}
-
-.vis-item,
-.vis-item.vis-selected {
-	border-color: var(--textDarkColor);
-	background-color: var(--textDarkColor);
-}
-
-.vis-time-axis .vis-grid.vis-major {
-	border-color: var(--bg1Color);
-}
-
+.vis-time-axis .vis-grid.vis-major,
 .vis-time-axis .vis-grid.vis-minor {
 	border-color: var(--bg1Color);
+}
+
+.vis-time-axis .vis-grid.vis-saturday,
+.vis-time-axis .vis-grid.vis-sunday {
+	background: #d6d3c9;
+}
+
+.vis-time-axis .vis-text {
+	font-size: 10px;
+}
+
+.projet_title {
+	width: 50%;
+	padding: 20px 0;
+	font-size: 16pt;
+	font-weight: bold;
+	letter-spacing: 4px;
+	color:var(--myOrangeDark);
+	text-align: center;
+}
+
+.projet_detail {
+	width: 50%;
+	font-size:8pt;
+	text-align: justify;
 }
 
 .project {
 	width: 90%;
 	margin: auto;
-}
-
-.project p {
-	padding: 2px;
-	text-align: justify;
-}
-
-.project h2 {
-	font-size: 16pt;
-	font-weight: bold;
-	letter-spacing: 4px;
-	color:var(--myOrangeDark);
 }
 
 .project h3 {
@@ -788,13 +788,16 @@ textarea {
 	background-color: var(--myOrangeLight);
 }
 
-.project th {
-	padding: 5px
-}
-
 .project td {
 	padding: 2px 5px;
 	text-align: left;
+}
+
+.project textarea {
+	padding: 20px;
+	border: none;
+	background: var(--bg0Color);
+	box-shadow: none;
 }
 
 .live {
@@ -940,13 +943,11 @@ textarea {
 	color: var(--myBlueLight);
 }
 
-
 .actions p, ul {
 	font-size: 10pt;
 	text-align: justify;
 	color: var(--textDarkColor);
 }
-
 
 .kanban {
 	display: grid;
@@ -965,26 +966,21 @@ textarea {
 	text-align: center;
 }
 
-
 .kanban_title_red {
 	background: var(--myRedLight);
 }
-
 
 .kanban_title_orange {
 	background: var(--myOrangeLight);
 }
 
-
 .kanban_title_blue {
 	background: var(--myBlueLight);
 }
 
-
 .kanban_title_green {
 	background: var(--myGreenLight);
 }
-
 
 .dropper {
 	width:100%;
@@ -993,31 +989,25 @@ textarea {
 	transition: all 200ms linear;
 }
 
-
 .drop_red_line {
 	border: 1px solid var(--myRedLight);
 }
-
 
 .drop_blue_line {
 	border: 1px solid var(--myBlueLight);
 }
 
-
 .drop_orange_line {
 	border: 1px solid var(--myOrangeLight);
 }
-
 
 .drop_green_line {
 	border: 1px solid var(--myGreenLight);
 }
 
-
 .drop_hover {
 	border-width: 2px;
 }
-
 
 .draggable {
 	width:90%;
@@ -1029,7 +1019,6 @@ textarea {
 	user-select: none;
 }
 
-
 .draggable-name {
 	width:100%;
 	padding: 5px;
@@ -1039,7 +1028,6 @@ textarea {
 	background-color: var(--bg2Color);
 	cursor: move;
 }
-
 
 .add_kanban {
 	padding: 0 5px;
@@ -1051,7 +1039,6 @@ textarea {
 	float: right;
 }
 
-
 .del_kanban {
 	padding: 0 4px;
 	font-size: 12px;
@@ -1061,7 +1048,6 @@ textarea {
 	cursor: pointer;
 	float: right;
 }
-
 
 .modal {
 	display: none;
@@ -1076,7 +1062,6 @@ textarea {
 	background-color: rgba(0,0,0,0.6);
 }
 
-
 .modal_content {
 	background-color: var(--bg0Color);
 	margin: auto;
@@ -1085,7 +1070,6 @@ textarea {
 	border-radius: 5px;
 }
 
-
 .close {
 	color: var(--textDarkColor);
 	float: right;
@@ -1093,7 +1077,6 @@ textarea {
 	font-weight: bold;
 	cursor: pointer;
 }
-
 
 .kanban_description {
 	width:95%;
@@ -1104,7 +1087,6 @@ textarea {
 	color: var(--textDarkColor);
 }
 
-
 .kanban_date {
 	width:95%;
 	margin: 2px auto;
@@ -1113,17 +1095,25 @@ textarea {
 	color: var(--textDarkColor);
 }
 
-
 .kanban_date_normal {
 	border-left: 8px solid var(--myGreenLight);
 }
-
 
 .kanban_date_limit {
 	border-left: 8px solid var(--myOrangeLight);
 }
 
-
 .kanban_date_alert {
 	border-left: 8px solid var(--myRedLight);
+}
+
+.gantt_container {
+	width: 100%;
+	background: var(--myRedLight);
+}
+
+.gantt_progress {
+	text-align: center;
+	color: var(--textClearColor);
+	background: var(--myRedDark);
 }

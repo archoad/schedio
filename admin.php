@@ -80,4 +80,4 @@ if (isset($_GET['action'])) {
 
 ?>
 
-<script type='text/javascript' src='js/schedio.js'></script>
+<script src='js/schedio.js'></script>

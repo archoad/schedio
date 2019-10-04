@@ -34,7 +34,7 @@ function headPageAuth() {
 	printf("<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />\n");
 	printf("<link rel='icon' type='image/png' href='pict/favicon.png' />\n");
 	printf("<link href='styles.php' rel='StyleSheet' type='text/css' media='all' />\n");
-	printf("<script type='text/javascript' src='js/schedio.js'></script>\n");
+	printf("<script src='js/schedio.js'></script>\n");
 	printf("<title>Authentification</title>\n");
 	printf("</head>\n<body>\n");
 }
@@ -118,22 +118,22 @@ function initiateNullSession() {
 function redirectUser($data) {
 	global $appli_titre;
 	initiateSession($data);
-	$role = getRole($_SESSION['role']);
 	switch ($_SESSION['role']) {
 		case '1': // Administrateur
-			headPage($appli_titre, sprintf("%s %s - %s", $_SESSION['prenom'], $_SESSION['nom'], $role));
+			headPage($appli_titre, sprintf("%s %s - %s", $_SESSION['prenom'], $_SESSION['nom'], getRole($_SESSION['role'])));
 			menuAdmin();
 			footPage();
 			break;
 		case '2': // Directeur de projet
 		case '3': // Chef de projet
-			headPage($appli_titre, sprintf("%s %s - %s", $_SESSION['prenom'], $_SESSION['nom'], $role));
+		case '4': // Manager
+			headPage($appli_titre, sprintf("%s %s - %s", $_SESSION['prenom'], $_SESSION['nom'], getRole($_SESSION['role'])));
 			menuUser();
 			footPage();
 			break;
 		default:
 			destroySession();
-			menuAuth();
+			header("Location: schedio.php");
 			break;
 	}
 }

@@ -158,49 +158,63 @@ function recorProject($action) {
 
 function displayProjects() {
 	$base = dbConnect();
-	if (intval($_SESSION['role']) == 2) {
-		$request = sprintf("SELECT * FROM project WHERE directeur='%d' ORDER BY chapter ASC, complete ASC, datedebut ASC", intval($_SESSION['uid']));
-	} else {
-		$request = sprintf("SELECT * FROM project WHERE chef='%d' ORDER BY chapter ASC, complete ASC, datedebut ASC", intval($_SESSION['uid']));
+	switch (intval($_SESSION['role'])) {
+		case 2: // Directeur de projet
+			$request = sprintf("SELECT * FROM project WHERE directeur='%d' ORDER BY chapter ASC, complete ASC, datedebut ASC", intval($_SESSION['uid']));
+			break;
+		case 4: // Manager
+			$request = sprintf("SELECT * FROM project ORDER BY chapter ASC, complete ASC, datedebut ASC");
+			break;
+		default: // Chef de projet
+			$request = sprintf("SELECT * FROM project WHERE chef='%d' ORDER BY chapter ASC, complete ASC, datedebut ASC", intval($_SESSION['uid']));
+			break;
 	}
 	$result = mysqli_query($base, $request);
 	dbDisconnect($base);
 	$chapterRef = 0;
 	printf("<div class='project'>\n");
 	while($row = mysqli_fetch_object($result)) {
-		if (intval($row->chapter) <> $chapterRef) {
-			if ($chapterRef<>0) { printf("</table>\n"); }
-			printf("<h3>%s</h3>", getChapter($row->chapter));
-			printf("<table>\n<tr><th>Nom</th><th>Directeur de projet</th><th>Chef de projet</th><th>Date de début</th><th>date de fin</th><th>Avancement</th>");
-			if (intval($_SESSION['role']) == 2) {
-				printf("<th>Etat</th>");
-			}
-			printf("</tr>");
-			$chapterRef = intval($row->chapter);
-		}
-		printf("<tr>\n");
-		printf("<td><a href='user.php?action=mgmt&value=%d'>%s</a></td>", $row->id, traiteStringFromBDD($row->nom));
-		printf("<td>%s</td>", getUser($row->directeur));
-		printf("<td>%s</td>", getUser($row->chef));
-		printf("<td>%s</td>", displayShortDate($row->datedebut));
-		printf("<td>%s</td>", displayShortDate($row->datefin));
-		if ((intval($_SESSION['role']) == 3) and (intval($row->complete))) {
-			printf("<td><div class='finished'>Projet clos</div></td>");
-		} else {
-			printf("<td>%s</td>", projectProgressBar($row->id));
-		}
-		if (intval($_SESSION['role']) == 2) {
-			if (computeProjectProgress($row->id) == 100) {
-				if (intval($row->complete)) {
-					printf("<td><span class='finished'>Clos</span></td>");
-				} else {
-					printf("<td><a class='complete' href='user.php?action=complete&value=%d'>Clore</a></td>", $row->id);
+		$closed = isProjectClosed($row->id);
+		if (!$closed) {
+			if (intval($row->chapter) <> $chapterRef) {
+				if ($chapterRef<>0) { printf("</table>\n"); }
+				printf("<h3>%s</h3>", getChapter($row->chapter));
+				printf("<table>\n<tr><th>Nom</th><th>Directeur de projet</th><th>Chef de projet</th><th>Date de début</th><th>date de fin</th><th>Avancement</th>");
+				if (in_array($_SESSION['role'], array('2', '4'))) {
+					printf("<th>Etat</th>");
 				}
-			} else {
-				printf("<td><span class='live'>Actif</span></td>");
+				printf("</tr>");
+				$chapterRef = intval($row->chapter);
 			}
+			printf("<tr>\n");
+			printf("<td><a href='user.php?action=mgmt&value=%d'>%s</a></td>", $row->id, traiteStringFromBDD($row->nom));
+			printf("<td>%s</td>", getUser($row->directeur));
+			printf("<td>%s</td>", getUser($row->chef));
+			printf("<td>%s</td>", displayShortDate($row->datedebut));
+			printf("<td>%s</td>", displayShortDate($row->datefin));
+			if ((intval($_SESSION['role']) == 3) and (intval($row->complete))) {
+				printf("<td><div class='finished'>Projet clos</div></td>");
+			} else {
+				printf("<td>%s</td>", projectProgressBar($row->id));
+			}
+			if (in_array($_SESSION['role'], array('2', '4'))) {
+				if (computeProjectProgress($row->id) == 100) {
+					if (intval($row->complete)) {
+						printf("<td><span class='finished'>Clos</span></td>");
+					} else {
+						if (intval($_SESSION['role']) == 2) {
+							printf("<td><a class='complete' href='user.php?action=complete&value=%d'>Clore</a></td>", $row->id);
+						}
+						if (intval($_SESSION['role']) == 4) {
+							printf("<td><span class='complete'>A clore</span></td>", $row->id);
+						}
+					}
+				} else {
+					printf("<td><span class='live'>Actif</span></td>");
+				}
+			}
+			printf("</tr>\n");
 		}
-		printf("</tr>\n");
 	}
 	printf("</table>\n</div>");
 }
@@ -213,8 +227,8 @@ function displayProjectHead() {
 	$record = mysqli_fetch_object($result);
 	dbDisconnect($base);
 	printf("<div class='project'>\n<table>\n<tr>\n");
-	printf("<th colspan='2' width='50%%'><h2>%s</h2></th>\n",  traiteStringFromBDD($record->nom));
-	printf("<th colspan='2' width='50%%'><p>%s</p></th>\n", traiteStringFromBDD($record->description));
+	printf("<th colspan='2' class='projet_title'>%s</th>\n",  traiteStringFromBDD($record->nom));
+	printf("<th colspan='2' class='projet_detail'>%s</th>\n", traiteStringFromBDD($record->description));
 	printf("</tr>\n<tr>\n");
 	printf("<th colspan='2'>%s</th>\n",  getChapter($record->chapter));
 	printf("<th colspan='2'>");
@@ -279,15 +293,17 @@ function displayTasks($data) {
 		printf("<td>%s</td>\n", computeDuration($row->datedebut, $row->datefin));
 		if ($closed) {
 			printf("<td>&nbsp;</td>\n");
+		} elseif (intval($_SESSION['role']) == 4) {
+			printf("<td style='text-align:center;'><a class='action_plus' href='user.php?action=read_actions&value=%d'>&rarrb;</a></td>\n", $row->id);
 		} else {
 			printf("<td style='text-align:center;'><a class='action_plus' href='user.php?action=actions&value=%d'>+</a></td>\n", $row->id);
 		}
 		printf("<td><div style='display: table; margin: auto;'>");
-		if (!$closed) {
+		if ((!$closed) and (intval($_SESSION['role']) != 4)) {
 			printf("<div style='display: table-cell;'><a class='project_minus' href='user.php?action=task_decrease&value=%d'>-</a></div>", $row->id);
 		}
 		printf("<div style='display: table-cell;'>%s</div>", taskProgressBar($row->id));
-		if (!$closed) {
+		if ((!$closed) and (intval($_SESSION['role']) != 4)) {
 			printf("<div style='display: table-cell;'><a class='project_plus' href='user.php?action=task_increase&value=%d'>+</a></div>", $row->id);
 		}
 		printf("</div></td>\n");
@@ -303,13 +319,19 @@ function tasksManagement() {
 	$request = sprintf("SELECT * FROM task WHERE projet='%d' ", intval($_SESSION['project']));
 	$result = mysqli_query($base, $request);
 	dbDisconnect($base);
-	if ($result->num_rows) {
-		displayTasks($result);
-		if (!$closed) {
+	if (in_array($_SESSION['role'], array('2', '3'))) {
+		if ($result->num_rows) {
+			displayTasks($result);
+			if (!$closed) {
+				addTask();
+			}
+		} else {
 			addTask();
 		}
 	} else {
-		addTask();
+		if ($result->num_rows) {
+			displayTasks($result);
+		}
 	}
 }
 
@@ -367,7 +389,11 @@ function recorTask($action) {
 
 function taskDetail() {
 	displayTaskHead();
-	actionsManagement();
+	if (intval($_SESSION['role']) != 4) {
+		actionsManagement();
+	} else {
+		displayActions();
+	}
 }
 
 
@@ -422,8 +448,25 @@ function actionsManagement() {
 		printf("<script>var simplemde = new SimpleMDE({ element: document.getElementById('description') });</script>");
 	} else {
 		linkMsg("user.php", "Erreur d'ouverture du fichier.", "alert.png");
-		footPage();
 	}
+}
+
+
+function displayActions() {
+	$fileName = getActionFilename();
+	printf("<div class='project'>\n");
+	if ($handle = fopen($fileName, "r")) {
+		if (filesize($fileName)) {
+			$data = fread($handle, filesize($fileName));
+			printf("<textarea name='description' id='description' cols='80' rows='30' readonly>%s</textarea>\n", $data);
+		} else {
+			printf("<textarea name='description' id='description' cols='80' rows='30' placeholder='Pas d&apos;actions enregistrées' readonly></textarea>\n");
+		}
+		fclose($handle);
+	} else {
+		printf("<textarea name='description' id='description' cols='80' rows='30' placeholder='Pas d&apos;actions enregistrées' readonly></textarea>\n");
+	}
+	printf("</div>\n");
 }
 
 
@@ -536,7 +579,7 @@ function displayKanban() {
 		$req_kanban = sprintf("SELECT * FROM kanban WHERE progress='%d' AND user='%d' ORDER BY priority ASC, datefin ASC", $row->id, $_SESSION['uid']);
 		$res_kanban = mysqli_query($base, $req_kanban);
 		while($row_kanban = mysqli_fetch_object($res_kanban)) {
-			displayKanbanTask($row_kanban->id);
+			displayKanbanTask($row_kanban->id, "user.php");
 		}
 		printf("</div>");
 	}
@@ -585,6 +628,15 @@ function recordKanban($action) {
 	}
 	dbDisconnect($base);
 }
+
+
+function displayGantts() {
+	printf("<script>window.onload = function() { loadGantt(); }</script>");
+	printf("<div class='project'>\n");
+	printf("<div id='ganttGraph'></div>\n");
+	printf("</div>\n");
+}
+
 
 
 
