@@ -29,6 +29,9 @@ function displayGantt(datas) {
 		showCurrentTime: true,
 		editable: false,
 		groupOrder: 'id',
+		order: function(a,b) {
+			return b.start - a.start;
+		},
 		visibleFrameTemplate: function(item) {
 			if (item.visibleFrameTemplate) {
 				return item.visibleFrameTemplate;
