@@ -70,7 +70,7 @@ function getProjects() {
 		if (!$closed) {
 			$projects[] = array(
 				'id' => 100 + intval($row->id),
-				'content' => sprintf("<b><a href='user.php?action=mgmt&value=%d'>%s</a></b><p>Directeur de projet: %s</p><p>Chef de projet: %s</p>%s", $row->id, traiteStringFromBDD($row->nom), getUser($row->directeur), getUser($row->chef), projectProgressBar($row->id)),
+				'content' => sprintf("<b><a href='user.php?action=mgmt&value=%d'>%s</a></b>", $row->id, traiteStringFromBDD($row->nom)),
 				'chapter' => intval($row->chapter),
 				'treeLevel' => 2,
 			);
