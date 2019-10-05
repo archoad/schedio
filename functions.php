@@ -325,6 +325,7 @@ function menuAdmin() {
 	linkMsg("admin.php?action=modif_user", "Modifier un utilisateur", "modif_user.png", 'menu');
 	printf("</div>\n<div class='column right'>\n");
 	linkMsg("admin.php?action=maintenance", "Maintenance de la Base de Données", "bdd.png", 'menu');
+	linkMsg("admin.php?action=password", "Changer de mot de passe", "cadenas.png", 'menu');
 	printf("</div>\n</div>");
 }
 

@@ -13,6 +13,7 @@ function loadGantt() {
 
 
 function displayGantt(datas) {
+	var dateOffset = (24*60*60*1000) * 15; //15 days
 	var jsonObj = JSON.parse(datas);
 	var container = document.getElementById('ganttGraph');
 	var items = new vis.DataSet(jsonObj.tasks);
@@ -20,6 +21,8 @@ function displayGantt(datas) {
 	var options = {
 		locale: 'fr_FR',
 		zoomable: false,
+		start: new Date(Date.now() - dateOffset),
+		end: new Date(Date.now() + dateOffset),
 		tooltip: { followMouse: true, delay: 100 },
 		timeAxis: { scale: 'day', step: 1 },
 		format: { minorLabels: {day: 'D'} },

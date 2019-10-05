@@ -131,8 +131,14 @@ if (isset($_GET['action'])) {
 	case 'mgmt':
 		if (isset($_GET['value'])) {
 			$_SESSION['project'] = intval($_GET['value']);
-			projectDetail();
-			footPage($script."?action=project_mgmt", "Accueil");
+			$referer = explode('=', $_SERVER['HTTP_REFERER'])[1];
+			if ($referer == 'gantt') {
+				displayProjectHead();
+				footPage($script."?action=gantt", "Accueil");
+			} else {
+				projectDetail();
+				footPage($script."?action=project_mgmt", "Accueil");
+			}
 		} else {
 			header("Location: ".$script."?action=project_mgmt");
 		}

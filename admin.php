@@ -68,6 +68,20 @@ if (isset($_GET['action'])) {
 		footPage($script, "Accueil");
 		break;
 
+	case 'password':
+		changePassword($script);
+		footPage();
+		break;
+
+	case 'chg_password':
+		if (recordNewPassword($_POST['new1'])) {
+			linkMsg($script, "Mot de passe changé avec succès", "ok.png");
+		} else {
+			linkMsg($script, "Erreur de changement de mot de passe", "alert.png");
+		}
+		footPage();
+		break;
+
 	default:
 		menuAdmin();
 		footPage();
