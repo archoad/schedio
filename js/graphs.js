@@ -23,7 +23,13 @@ function displayGantt(datas) {
 		zoomable: false,
 		start: new Date(Date.now() - dateOffset),
 		end: new Date(Date.now() + dateOffset),
-		tooltip: { followMouse: true, delay: 100 },
+		tooltip: {
+			followMouse: true,
+			delay: 100,
+			template: function(item) {
+				return "<span style='font-size:8pt;'>" + item.title + "</span>";
+			}
+		},
 		timeAxis: { scale: 'day', step: 1 },
 		format: { minorLabels: {day: 'D'} },
 		showCurrentTime: true,

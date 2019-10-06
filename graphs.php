@@ -70,7 +70,7 @@ function getProjects() {
 		if (!$closed) {
 			$projects[] = array(
 				'id' => 100 + intval($row->id),
-				'content' => sprintf("<b><a href='user.php?action=mgmt&value=%d'>%s</a></b>", $row->id, traiteStringFromBDD($row->nom)),
+				'content' => sprintf("<b><a href='user.php?action=mgmt&value=%d'>%s</a></b><br />Avancement: %d%%", $row->id, traiteStringFromBDD($row->nom), computeProjectProgress($row->id)),
 				'chapter' => intval($row->chapter),
 				'treeLevel' => 2,
 			);
@@ -98,6 +98,7 @@ function getTasks($projects) {
 				'style' => sprintf("padding:2px; font-size: 8pt; border-color: %s; background-color: %s;", hex2rgb($colors[$counter], '1.0'), hex2rgb($colors[$counter], '0.5')),
 				'group' => intval($p['id']),
 				'value' => $row->avancement.'%',
+				'title' => traiteStringFromBDD($row->nom),
 			);
 		}
 		$counter++;
