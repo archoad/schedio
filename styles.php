@@ -28,7 +28,7 @@ ob_start('ob_gzhandler');
 header('Cache-Control: max-age=31536000, must-revalidate');
 session_start();
 
-switch ($_SESSION['mode']) {
+switch ($_SESSION['theme']) {
 	case 'standard':
 		$bg0Color = '#eae7dc';
 		$bg1Color = '#d8c3a5';
@@ -55,7 +55,7 @@ switch ($_SESSION['mode']) {
 		$myGreenLight = '#5cb85c';
 		$myGreenDark = '#449d44';
 		break;
-	case 'laposte':
+	case 'glp':
 		$bg0Color = '#ffffff';
 		$bg1Color = '#ffcb05';
 		$bg2Color = '#003da5';
@@ -125,6 +125,14 @@ h2 {
 
 h3 {
 	font-size:8pt;
+}
+
+h4 {
+	text-align:center;
+	font-size:10pt;
+	font-weight: normal;
+	letter-spacing: 2px;
+	color:var(--myBlueDark);
 }
 
 p, ul, ol {
@@ -220,6 +228,30 @@ dd {
 	padding: 0 0 5px 0;
 }
 
+.none {
+	display: none;
+}
+
+.block {
+	display: block;
+}
+
+.protected {
+	background-color: #ffc7c7;
+}
+
+.modifquiz {
+	width: 12%;
+}
+
+.assesssynth {
+	width: 120px;
+}
+
+.fontvingt {
+	font-size: 20pt;
+}
+
 textarea {
 	display: block;
 	margin-left: auto;
@@ -232,6 +264,10 @@ textarea {
 	resize: none;
 	outline: none;
 	box-shadow: var(--shadowHover);
+}
+
+.pleft {
+	text-align: left;
 }
 
 .row {
@@ -391,6 +427,11 @@ textarea {
 	margin: auto;
 }
 
+.help {
+	width: 60px;
+	margin: auto;
+}
+
 .auth form {
 	width: 80%;
 	margin: auto;
@@ -415,14 +456,14 @@ textarea {
 	background-image: url('pict/user.png');
 	background-position: 5px 10px;
 	background-repeat: no-repeat;
-	background-size: 25px Auto;
+	background-size: 25px auto;
 }
 
 .auth input[type=password] {
 	background-image: url('pict/cadenas.png');
 	background-position: 5px 10px;
 	background-repeat: no-repeat;
-	background-size: 25px Auto;
+	background-size: 25px auto;
 }
 
 .auth input[type=submit] {
@@ -460,6 +501,33 @@ textarea {
 	font-weight: normal;
 	text-decoration: underline;
 	color: var(--textClearColor);
+}
+
+.captcha {
+	vertical-align: middle;
+}
+
+.captcha img {
+	display: block;
+	float: left;
+	width: 60%;
+	margin: 0;
+	padding: 10px 5px 5px 5px;
+}
+
+.captcha input {
+	float: right;
+	background: var(--bg0Color);
+	outline: 0;
+	width: 40%;
+	border: 0;
+	padding: 15px 5px 15px 5px;
+	font-size: 14px;
+	color: var(--textDarkColor);
+}
+
+.captcha input[type=text] {
+	background-image: none;
 }
 
 .btnValid {

@@ -26,10 +26,14 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 include("functions.php");
 
 function headPageAuth() {
+	genSyslog(__FUNCTION__);
 	set_var_utf8();
 	header("cache-control: no-cache, must-revalidate");
 	header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");
 	header("Content-type: text/html; charset=utf-8");
+	header('X-Content-Type-Options: "nosniff"');
+	header("X-XSS-Protection: 1; mode=block");
+	header("X-Frame-Options: deny");
 	printf("<!DOCTYPE html>\n<html lang='fr-FR'>\n<head>\n");
 	printf("<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />\n");
 	printf("<link rel='icon' type='image/png' href='pict/favicon.png' />\n");
@@ -47,6 +51,7 @@ function footPageAuth() {
 
 function menuAuth($msg='') {
 	global $auhtPict;
+	genSyslog(__FUNCTION__);
 	initiateNullSession();
 	headPageAuth();
 	printf("<div class='authcont'>\n");
@@ -54,11 +59,15 @@ function menuAuth($msg='') {
 	printf("<img src=%s alt='CyberSécurité' />", $auhtPict);
 	printf("</div>\n<div class='auth'>\n");
 	printf("<form method='post' id='auth' action='schedio.php?action=connect' onsubmit='return champs_ok(this)'>\n");
-	printf("<input type='text' size='20' maxlength='20' name='login' id='login' placeholder='Identifiant' />\n");
-	printf("<input type='password' size='20' maxlength='20' name='password' id='password' placeholder='Mot de passe' />\n");
+	printf("<input type='text' size='20' maxlength='20' name='login' id='login' placeholder='Identifiant' autocomplete='username' />\n");
+	printf("<input type='password' size='20' maxlength='20' name='password' id='password' placeholder='Mot de passe' autocomplete='current-password' />\n");
+	printf("<div class='captcha'>\n");
+	printf("<img src='captcha.php' alt='captcha'/>\n");
+	printf("<input type='text' size='6' maxlength='6' name='captcha' id='captcha' placeholder='Saisir le code' />\n");
+	printf("</div>");
 	printf("<input type='submit' id='valid' value='Connexion' />\n");
 	if ($msg<>'') {
-		printf("<img src='pict/help.png' alt='Aide' style='width:30px;' />");
+		printf("<div class='help'><img src='pict/help.png' alt='Aide' /></div>");
 		printf("<p>%s</p>\n", $msg);
 		printf("<a href='aide.php'>(Afficher l'aide en ligne)</a>\n");
 	}
@@ -68,6 +77,7 @@ function menuAuth($msg='') {
 
 
 function authentification($login, $password) {
+	genSyslog(__FUNCTION__);
 	$base = dbConnect();
 	$request = sprintf("SELECT * FROM users WHERE login='%s' LIMIT 1", $login);
 	$result = mysqli_query($base, $request);
@@ -86,12 +96,14 @@ function authentification($login, $password) {
 
 
 function initiateSession($data) {
-	global $mode;
+	genSyslog(__FUNCTION__);
+	global $cssTheme, $captchaMode;
 	session_regenerate_id();
 	date_default_timezone_set('Europe/Paris');
 	$date = getdate();
 	$annee = $date['year'];
-	$_SESSION['mode'] = $mode;
+	$_SESSION['theme'] = $cssTheme;
+	$_SESSION['captchaMode'] = $captchaMode;
 	$_SESSION['day'] = mb_strtolower(strftime("%A %d %B %Y", time()));
 	$_SESSION['hour'] = mb_strtolower(strftime("%H:%M", time()));
 	$_SESSION['os'] = detectOS();
@@ -107,27 +119,43 @@ function initiateSession($data) {
 
 
 function initiateNullSession() {
-	global $mode;
+	genSyslog(__FUNCTION__);
+	global $cssTheme, $captchaMode;
 	session_regenerate_id();
-	$_SESSION['mode'] = $mode;
+	$_SESSION['theme'] = $cssTheme;
+	$_SESSION['captchaMode'] = $captchaMode;
 	$_SESSION['role'] = '100';
 	$_SESSION['uid'] = 'null';
 }
 
 
+function validateCaptcha($captcha) {
+	genSyslog(__FUNCTION__);
+	if (strncmp($_SESSION['sess_captcha'], $captcha, 6) === 0) {
+		return true;
+	} else {
+		return false;
+	}
+}
+
+
 function redirectUser($data) {
 	global $appli_titre;
+	genSyslog(__FUNCTION__);
 	initiateSession($data);
+	if(isset($_SESSION['sess_captcha'])) {
+		unset($_SESSION['sess_captcha']);
+	}
 	switch ($_SESSION['role']) {
 		case '1': // Administrateur
-			headPage($appli_titre, sprintf("%s %s - %s", $_SESSION['prenom'], $_SESSION['nom'], getRole($_SESSION['role'])));
+			headPage($appli_titre, "Administration");
 			menuAdmin();
 			footPage();
 			break;
 		case '2': // Directeur de projet
 		case '3': // Chef de projet
 		case '4': // Manager
-			headPage($appli_titre, sprintf("%s %s - %s", $_SESSION['prenom'], $_SESSION['nom'], getRole($_SESSION['role'])));
+			headPage($appli_titre);
 			menuUser();
 			footPage();
 			break;
@@ -143,18 +171,26 @@ session_start();
 if (isset($_GET['action'])) {
 	switch ($_GET['action']) {
 		case 'connect':
-			$data = authentification($_POST['login'], $_POST['password']);
-			if ($data) {
-				redirectUser($data);
+			if (validateCaptcha($_POST['captcha'])) {
+				$data = authentification($_POST['login'], $_POST['password']);
+				if ($data) {
+					redirectUser($data);
+				} else {
+					menuAuth("Erreur d'authentification");
+					exit();
+				}
 			} else {
-				menuAuth("Erreur d'authentification");
-				exit();
+				destroySession();
+				header("Location: schedio.php");
 			}
 			break;
 		case 'disconnect':
-			menuAuth();
+			destroySession();
+			header("Location: schedio.php");
 			break;
 		default:
+			destroySession();
+			header("Location: schedio.php");
 			break;
 	}
 } else {

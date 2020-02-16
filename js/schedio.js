@@ -140,8 +140,8 @@ function confirmDelete() {
 				var elt = document.getElementById(data);
 				elt.style.borderStyle = 'solid';
 				elt.style.borderWidth = '1px';
-				var target = e.target,
-				draggedElement = dndHandler.draggedElement,
+				var target = e.target;
+				draggedElement = dndHandler.draggedElement;
 				clonedElement = draggedElement.cloneNode(true);
 				while(target.className.indexOf('dropper') == -1) {
 					target = target.parentNode;

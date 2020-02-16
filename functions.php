@@ -37,9 +37,11 @@ $passwd = 'webphpsql';
 $appli_titre = ("Schedio - Gestion de projet");
 $appli_titre_short = ("Schedio");
 // Thème CSS
-$mode = 'standard';
+$cssTheme = 'standard';
 // Image accueil
 $auhtPict = 'pict/accueil.png';
+// Mode captcha
+$captchaMode = 'num'; // 'txt' or 'num'
 // --------------------
 
 
@@ -51,9 +53,11 @@ $auhtPict = 'pict/accueil.png';
 date_default_timezone_set('Europe/Paris');
 setlocale(LC_ALL, 'fr_FR.utf8');
 
-ini_set('display_errors','0');
+ini_set('error_reporting', -1);
+ini_set('display_error', 1);
 ini_set('session.use_trans_sid', 0);
 ini_set('session.use_cookie', 1);
+//ini_set('session.cookie_secure', 1);
 ini_set('session.use_only_cookies', 1);
 ini_set('session.use_strict_mode', 1);
 ini_set('session.cache_limiter', 'nocache');
@@ -63,7 +67,10 @@ ini_set('session.cookie_httponly', 1);
 ini_set('session.entropy_length', 32);
 ini_set('session.entropy_file', '/dev/urandom');
 ini_set('session.hash_function', 'sha256');
+ini_set('filter.default', 'full_special_chars');
+ini_set('filter.default_flags', 0);
 
+$cspReport = "csp_parser.php";
 $server_path = dirname($_SERVER['SCRIPT_FILENAME']);
 $cheminMD = sprintf("%s/data/", $server_path);
 // --------------------
@@ -72,10 +79,15 @@ $cheminMD = sprintf("%s/data/", $server_path);
 
 function dbConnect(){
 	global $servername, $dbname, $login, $passwd;
-	$dbh = mysqli_connect($servername, $login, $passwd) or die("Problème de connexion");
-	mysqli_select_db($dbh, $dbname) or die("problème avec la table");
-	mysqli_query($dbh, "SET NAMES 'utf8'");
-	return $dbh;
+	$link = mysqli_connect($servername, $login, $passwd, $dbname);
+	if (!$link) {
+		$msg = sprintf("Erreur de connexion: %d (%s)", mysqli_connect_errno(),  mysqli_connect_error());
+		linkMsg("evalsmsi.php", $msg, "alert.png");
+		footPage();
+	} else {
+		mysqli_set_charset($link , 'utf8');
+		return $link;
+	}
 }
 
 
@@ -86,15 +98,16 @@ function dbDisconnect($dbh){
 
 
 function destroySession() {
+	genSyslog(__FUNCTION__);
 	session_destroy();
 	unset($_SESSION);
+	header('Location: schedio.php');
 }
 
 
 function isSessionValid($role) {
 	if (!isset($_SESSION['uid']) OR (!in_array($_SESSION['role'], $role))) {
 		destroySession();
-		header('Location: schedio.php');
 		exit();
 	}
 }
@@ -199,11 +212,35 @@ function get_var_utf8(){
 }
 
 
+function genSyslog($caller) {
+	global $progVersion;
+	$log = array();
+	$log[] = array('program' => 'schedio', 'version' => $progVersion);
+	$log[] = array('function' => $caller);
+	if (isset($_SESSION['login'])) {
+		$log[] = array('login' => $_SESSION['login']);
+	}
+	if (isset($_SESSION['id_etab'])) {
+		$log[] = array('etablissement' => $_SESSION['id_etab']);
+	}
+	if (isset($_SESSION['quiz'])) {
+		$log[] = array('quiz' => $_SESSION['quiz']);
+	}
+	openlog("evalsmsi", LOG_PID, LOG_SYSLOG);
+	syslog(LOG_INFO, json_encode($log));
+	closelog();
+}
+
+
 function headPage($titre, $sousTitre=''){
+	genSyslog(__FUNCTION__);
 	set_var_utf8();
 	header("cache-control: no-cache, must-revalidate");
 	header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");
 	header("Content-type: text/html; charset=utf-8");
+	header('X-Content-Type-Options: "nosniff"');
+	header("X-XSS-Protection: 1; mode=block");
+	header("X-Frame-Options: deny");
 	printf("<!DOCTYPE html>\n<html lang='fr-FR'>\n<head>\n");
 	printf("<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />\n");
 	printf("<meta http-equiv='refresh' content='600'>");
@@ -214,8 +251,6 @@ function headPage($titre, $sousTitre=''){
 	printf("</head>\n<body>\n<h1>%s</h1>\n", $titre);
 	if ($sousTitre !== '') {
 		printf("<h2>%s</h2>\n", $sousTitre);
-	} else {
-		printf("<h2>%s</h2>\n", uidToEtbs());
 	}
 }
 
@@ -266,22 +301,59 @@ function linkMsg($link, $msg, $img, $class='msg') {
 
 
 function traiteStringToBDD($str) {
-	$str = trim($str);
-	if (!get_magic_quotes_gpc()) {
-		$str = addslashes($str);
+	$str = str_split($str);
+	$temp = '';
+	for($i=0; $i<count($str); $i++) {
+		switch ($str[$i]) {
+			case '+':
+			case '=':
+			case '|':
+				$temp .= ' ';
+				break;
+			default:
+				$temp .= $str[$i];
+				break;
+		}
 	}
-	return htmlentities($str, ENT_QUOTES, 'UTF-8');
+	$temp = str_split($temp);
+	$output = '';
+	for($i=0; $i<count($temp); $i++) {
+		if (isset($temp[$i+1])) {
+			$chrNum = sprintf("%d%d", ord($temp[$i]), ord($temp[$i+1]));
+			switch ($chrNum) {
+				case '4039': // remove ('
+				case '3941': // remove ')
+				case '4041': // remove ()
+				case '4747': // remove //
+					$output .= ' ';
+					$i += 1;
+					break;
+				default:
+					$output .= $temp[$i];
+					break;
+			}
+		} else {
+			$output .= $temp[$i];
+		}
+	}
+	$output = strip_tags($output);
+	return htmlspecialchars($output, ENT_QUOTES, 'UTF-8');
 }
 
 
 function traiteStringFromBDD($str){
-	$str = trim($str);
-	$str = stripslashes($str);
-	return html_entity_decode($str, ENT_QUOTES, 'UTF-8');
+	return htmlspecialchars_decode($str, ENT_QUOTES);
+}
+
+
+function generateToken() {
+	$token = hash('sha3-256', random_bytes(32));
+	return $token;
 }
 
 
 function changePassword($script) {
+	genSyslog(__FUNCTION__);
 	$base = dbConnect();
 	$request = sprintf("SELECT * FROM users WHERE login='%s' LIMIT 1", $_SESSION['login']);
 	$result=mysqli_query($base, $request);
@@ -306,6 +378,7 @@ function changePassword($script) {
 
 
 function recordNewPassword($passwd) {
+	genSyslog(__FUNCTION__);
 	$base = dbConnect();
 	$passwd = password_hash($passwd, PASSWORD_BCRYPT);
 	$request = sprintf("UPDATE users SET password='%s' WHERE login='%s'", $passwd, $_SESSION['login']);
@@ -319,6 +392,7 @@ function recordNewPassword($passwd) {
 
 
 function menuAdmin() {
+	genSyslog(__FUNCTION__);
 	printf("<div class='row'>\n");
 	printf("<div class='column left'>\n");
 	linkMsg("admin.php?action=new_user", "Ajouter un utilisateur", "add_user.png", 'menu');
@@ -331,6 +405,7 @@ function menuAdmin() {
 
 
 function menuUser() {
+	genSyslog(__FUNCTION__);
 	printf("<div class='row'>\n");
 	printf("<div class='column left'>\n");
 	linkMsg("user.php?action=project_mgmt", "Gestion de projet", "project_mgmt.png", 'menu');
