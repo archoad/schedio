@@ -20,26 +20,30 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 =========================================================*/
 
+
 include("functions.php");
 include("funct_user.php");
 session_start();
 $authorizedRole = array('2', '3', '4');
 isSessionValid($authorizedRole);
 headPage($appli_titre, sprintf("%s %s - %s", $_SESSION['prenom'], $_SESSION['nom'], getRole($_SESSION['role'])));
-$script = basename($_SERVER['PHP_SELF']);
+
+
+
 
 if (isset($_GET['action'])) {
 	switch ($_GET['action']) {
+
 	case 'new_project':
 		createProject();
 		footPage();
 		break;
 
 	case 'record_project':
-		if (recorProject('add')) {
-			linkMsg($script, "Projet ajouté dans la base", "ok.png");
+		if (recordProject('add')) {
+			linkMsg($_SESSION['curr_script'], "Projet ajouté dans la base", "ok.png");
 		} else {
-			linkMsg($script, "Erreur d'enregistrement", "alert.png");
+			linkMsg($_SESSION['curr_script'], "Erreur d'enregistrement", "alert.png");
 		}
 		footPage();
 		break;
@@ -48,62 +52,63 @@ if (isset($_GET['action'])) {
 		if (empty($_POST['project'])) {
 			selectProjectModif();
 		} else {
-			modifProject($_POST['project']);
+			$_SESSION['current_project'] = $_POST['project'];
+			modifProject();
 		}
 		footPage();
 		break;
 
 	case 'update_project':
-		if ($id = recorProject('update')) {
-			linkMsg($script, "Projet modifié dans la base", "ok.png");
+		if (recordProject('update')) {
+			linkMsg($_SESSION['curr_script'], "Projet modifié dans la base", "ok.png");
 		} else {
-			linkMsg($script, "Erreur de modification", "alert.png");
+			linkMsg($_SESSION['curr_script'], "Erreur de modification", "alert.png");
 		}
 		footPage();
 		break;
 
 	case 'project_mgmt':
 		displayProjects();
-		footPage($script, "Accueil");
+		footPage($_SESSION['curr_script'], "Accueil");
 		break;
 
 	case 'password':
-		changePassword($script);
+		changePassword();
 		footPage();
 		break;
 
 	case 'chg_password':
 		if (recordNewPassword($_POST['new1'])) {
-			linkMsg($script, "Mot de passe changé avec succès", "ok.png");
+			linkMsg($_SESSION['curr_script'], "Mot de passe changé avec succès", "ok.png");
 		} else {
-			linkMsg($script, "Erreur de changement de mot de passe", "alert.png");
+			linkMsg($_SESSION['curr_script'], "Erreur de changement de mot de passe", "alert.png");
 		}
 		footPage();
 		break;
 
 	case 'record_task':
-		if (recorTask('add')) {
-			header("Location: ".$script."?action=mgmt&value=".$_SESSION['project']);
+		if (recordNewTask()) {
+			header("Location: ".$_SESSION['curr_script']."?action=mgmt&value=".$_SESSION['project']);
 		} else {
-			linkMsg($script, "Erreur d'enregistrement", "alert.png");
+			linkMsg($_SESSION['curr_script'], "Erreur d'enregistrement", "alert.png");
 			footPage();
 		}
 		break;
 
 	case 'task_increase':
-		if (recorTask('increase')) {
-			header("Location: ".$script."?action=mgmt&value=".$_SESSION['project']);
+		if (incrDecrTask('increase')) {
+			header("Location: ".$_SESSION['curr_script']."?action=mgmt&value=".$_SESSION['project']);
 		} else {
-			linkMsg($script, "Erreur d'enregistrement", "alert.png");
+			linkMsg($_SESSION['curr_script'], "Erreur d'enregistrement", "alert.png");
 			footPage();
 		}
 		break;
 
 	case 'task_decrease':
-		if (recorTask('decrease')) {
-			header("Location: ".$script."?action=mgmt&value=".$_SESSION['project']);
+		if (incrDecrTask('decrease')) {
+			header("Location: ".$_SESSION['curr_script']."?action=mgmt&value=".$_SESSION['project']);
 		} else {
-			linkMsg($script, "Erreur d'enregistrement", "alert.png");
+			linkMsg($_SESSION['curr_script'], "Erreur d'enregistrement", "alert.png");
 			footPage();
 		}
 		break;
@@ -112,9 +117,9 @@ if (isset($_GET['action'])) {
 		if (isset($_GET['value'])) {
 			$_SESSION['task'] = intval($_GET['value']);
 			taskDetail();
-			footPage($script."?action=mgmt&value=".$_SESSION['project'], "Accueil");
+			footPage($_SESSION['curr_script']."?action=mgmt&value=".$_SESSION['project'], "Accueil");
 		} else {
-			header("Location: ".$script."?action=mgmt");
+			header("Location: ".$_SESSION['curr_script']."?action=mgmt");
 		}
 		break;
 
@@ -122,9 +127,9 @@ if (isset($_GET['action'])) {
 		if (isset($_GET['value'])) {
 			$_SESSION['task'] = intval($_GET['value']);
 			taskDetail();
-			footPage($script."?action=mgmt&value=".$_SESSION['project'], "Accueil");
+			footPage($_SESSION['curr_script']."?action=mgmt&value=".$_SESSION['project'], "Accueil");
 		} else {
-			header("Location: ".$script."?action=mgmt");
+			header("Location: ".$_SESSION['curr_script']."?action=mgmt");
 		}
 		break;
 
@@ -134,66 +139,66 @@ if (isset($_GET['action'])) {
 			$referer = explode('=', $_SERVER['HTTP_REFERER'])[1];
 			if ($referer == 'gantt') {
 				displayProjectHead();
-				footPage($script."?action=gantt", "Accueil");
+				footPage($_SESSION['curr_script']."?action=gantt", "Accueil");
 			} else {
 				projectDetail();
-				footPage($script."?action=project_mgmt", "Accueil");
+				footPage($_SESSION['curr_script']."?action=project_mgmt", "Accueil");
 			}
 		} else {
-			header("Location: ".$script."?action=project_mgmt");
+			header("Location: ".$_SESSION['curr_script']."?action=project_mgmt");
 		}
 		break;
 
 	case 'complete':
 		if (isset($_GET['value'])) {
-			if (recorProject('close')) {
-				header("Location: ".$script."?action=project_mgmt");
+			if (recordProject('close')) {
+				header("Location: ".$_SESSION['curr_script']."?action=project_mgmt");
 			} else {
-				linkMsg($script, "Erreur d'enregistrement", "alert.png");
+				linkMsg($_SESSION['curr_script'], "Erreur d'enregistrement", "alert.png");
 				footPage();
 			}
 		} else {
-			header("Location: ".$script."?action=project_mgmt");
+			header("Location: ".$_SESSION['curr_script']."?action=project_mgmt");
 		}
 		break;
 
 	case 'record_action':
 		if (recordAction()) {
-			header("Location: ".$script."?action=mgmt&value=".$_SESSION['project']);
+			header("Location: ".$_SESSION['curr_script']."?action=mgmt&value=".$_SESSION['project']);
 		} else {
-			linkMsg($script, "Erreur d'enregistrement", "alert.png");
+			linkMsg($_SESSION['curr_script'], "Erreur d'enregistrement", "alert.png");
 			footPage();
 		}
 		break;
 
 	case 'kanban':
 		displayKanban();
-		footPage($script, "Accueil");
+		footPage($_SESSION['curr_script'], "Accueil");
 		break;
 
 	case 'add_kanban':
 		if (recordKanban('add')) {
-			header("Location: ".$script."?action=kanban");
+			header("Location: ".$_SESSION['curr_script']."?action=kanban");
 		} else {
-			linkMsg($script, "Erreur d'enregistrement", "alert.png");
+			linkMsg($_SESSION['curr_script'], "Erreur d'enregistrement", "alert.png");
 			footPage();
 		}
 		break;
 
 	case 'update_kanban':
 		if (recordKanban('update')) {
-			header("Location: ".$script."?action=kanban");
+			header("Location: ".$_SESSION['curr_script']."?action=kanban");
 		} else {
-			linkMsg($script, "Erreur d'enregistrement", "alert.png");
+			linkMsg($_SESSION['curr_script'], "Erreur d'enregistrement", "alert.png");
 			footPage();
 		}
 		break;
 
 	case 'modify_kanban':
 		if (recordKanban('modify')) {
-			header("Location: ".$script."?action=kanban");
+			header("Location: ".$_SESSION['curr_script']."?action=kanban");
 		} else {
-			linkMsg($script, "Erreur d'enregistrement", "alert.png");
+			linkMsg($_SESSION['curr_script'], "Erreur d'enregistrement", "alert.png");
 			footPage();
 		}
 		break;
@@ -201,22 +206,33 @@ if (isset($_GET['action'])) {
 	case 'del_kanban':
 		if (isset($_GET['kid'])) {
 			if (recordKanban('delete')) {
-				header("Location: ".$script."?action=kanban");
+				header("Location: ".$_SESSION['curr_script']."?action=kanban");
 			} else {
-				linkMsg($script, "Erreur d'effacement", "alert.png");
+				linkMsg($_SESSION['curr_script'], "Erreur d'effacement", "alert.png");
 				footPage();
 			}
 		} else {
-			header("Location: ".$script."?action=kanban");
+			header("Location: ".$_SESSION['curr_script']."?action=kanban");
 		}
 		break;
 
 	case 'gantt':
 		displayGantts();
-		footPage($script, "Accueil");
+		footPage($_SESSION['curr_script'], "Accueil");
+		break;
+
+	case 'rm_token':
+		if (isset($_SESSION['token'])) {
+			unset($_SESSION['token']);
+		}
+		menuUser();
+		footPage();
 		break;
 
 	default:
+		if (isset($_SESSION['token'])) {
+			unset($_SESSION['token']);
+		}
 		menuUser();
 		footPage();
 	}
@@ -229,6 +245,5 @@ if (isset($_GET['action'])) {
 
 ?>
 
-<script src='js/schedio.js'></script>
 <script src='js/graphs.js'></script>
 <script src='js/vis-timeline-graph2d.min.js'></script>

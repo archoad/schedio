@@ -20,10 +20,8 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 =========================================================*/
 
-
-
-
 include("functions.php");
+
 
 function headPageAuth() {
 	genSyslog(__FUNCTION__);
@@ -54,16 +52,17 @@ function menuAuth($msg='') {
 	genSyslog(__FUNCTION__);
 	initiateNullSession();
 	headPageAuth();
+	$_SESSION['rand'] = genNonce();
 	printf("<div class='authcont'>\n");
 	printf("<div class='auth'>\n");
 	printf("<img src=%s alt='CyberSécurité' />", $auhtPict);
 	printf("</div>\n<div class='auth'>\n");
-	printf("<form method='post' id='auth' action='schedio.php?action=connect' onsubmit='return champs_ok(this)'>\n");
-	printf("<input type='text' size='20' maxlength='20' name='login' id='login' placeholder='Identifiant' autocomplete='username' />\n");
-	printf("<input type='password' size='20' maxlength='20' name='password' id='password' placeholder='Mot de passe' autocomplete='current-password' />\n");
+	printf("<form method='post' id='auth' action='schedio.php?rand=%s&action=connect'>\n", $_SESSION['rand']);
+	printf("<input type='text' size='20' maxlength='20' name='login' id='login' placeholder='Identifiant' autocomplete='username' required />\n");
+	printf("<input type='password' size='20' maxlength='20' name='password' id='password' placeholder='Mot de passe' autocomplete='current-password' required />\n");
 	printf("<div class='captcha'>\n");
 	printf("<img src='captcha.php' alt='captcha'/>\n");
-	printf("<input type='text' size='6' maxlength='6' name='captcha' id='captcha' placeholder='Saisir le code' />\n");
+	printf("<input type='text' size='6' maxlength='6' name='captcha' id='captcha' placeholder='Saisir le code' required />\n");
 	printf("</div>");
 	printf("<input type='submit' id='valid' value='Connexion' />\n");
 	if ($msg<>'') {
@@ -148,54 +147,52 @@ function redirectUser($data) {
 	}
 	switch ($_SESSION['role']) {
 		case '1': // Administrateur
-			headPage($appli_titre, "Administration");
-			menuAdmin();
-			footPage();
+			header('Location: admin.php');
 			break;
 		case '2': // Directeur de projet
 		case '3': // Chef de projet
 		case '4': // Manager
-			headPage($appli_titre);
-			menuUser();
-			footPage();
+			header('Location: user.php');
 			break;
 		default:
 			destroySession();
-			header("Location: schedio.php");
 			break;
 	}
 }
 
 
 session_start();
-if (isset($_GET['action'])) {
-	switch ($_GET['action']) {
-		case 'connect':
-			if (validateCaptcha($_POST['captcha'])) {
-				$data = authentification($_POST['login'], $_POST['password']);
-				if ($data) {
-					redirectUser($data);
+if (isset($_GET['rand']) && ($_GET['rand'] === $_SESSION['rand'])) {
+	if (isset($_GET['action'])) {
+		switch ($_GET['action']) {
+			case 'connect':
+				if (validateCaptcha($_POST['captcha'])) {
+					$data = authentification($_POST['login'], $_POST['password']);
+					if ($data) {
+						redirectUser($data);
+					} else {
+						menuAuth("Erreur d'authentification");
+						exit();
+					}
 				} else {
-					menuAuth("Erreur d'authentification");
-					exit();
+					destroySession();
 				}
-			} else {
+				break;
+			case 'disconnect':
 				destroySession();
-				header("Location: schedio.php");
-			}
-			break;
-		case 'disconnect':
-			destroySession();
-			header("Location: schedio.php");
-			break;
-		default:
-			destroySession();
-			header("Location: schedio.php");
-			break;
+				break;
+			default:
+				destroySession();
+				break;
+		}
+	} else {
+		menuAuth();
+		exit;
 	}
 } else {
 	menuAuth();
 	exit;
 }
+
 
 ?>

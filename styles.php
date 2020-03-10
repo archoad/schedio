@@ -186,6 +186,18 @@ input[type=reset] {
 	cursor: pointer;
 }
 
+input:invalid,
+select:invalid,
+textarea:invalid {
+	border-color: var(--myRedDark);
+}
+
+input:valid,
+select:valid,
+textarea:valid {
+	border-color: var(--bg1Color);
+}
+
 table {
 	width: 80%;
 	margin: 5px auto 5px auto;

@@ -25,28 +25,28 @@ function createProject() {
 	$base = dbConnect();
 	$res_chefproj = mysqli_query($base, "SELECT * FROM users WHERE role='2' OR role='3'");
 	$res_chapter = mysqli_query($base, "SELECT * FROM chapter");
-	printf("<form method='post' id='new_project' action='user.php?action=record_project' onsubmit='return champs_ok(this)'>\n");
+	printf("<form method='post' id='new_project' action='user.php?action=record_project'>\n");
 	printf("<fieldset>\n<legend>Ajout d'un projet</legend>\n");
 	printf("<table>\n<tr>\n");
-	printf("<td colspan='3'><input type='text' size='60' maxlength='60' name='nom' id='nom' placeholder='Nom' />\n</td>");
+	printf("<td colspan='3'><input type='text' size='60' maxlength='60' name='nom' id='nom' placeholder='Nom' required>\n</td>");
 	printf("</tr>\n<tr>\n");
-	printf("<td colspan='3'><textarea name='description' id='description' cols='60' rows='3' placeholder='Description'></textarea></td>\n");
+	printf("<td colspan='3'><textarea name='description' id='description' cols='60' rows='3' placeholder='Description' required></textarea></td>\n");
 	printf("</tr>\n<tr>\n");
-	printf("<td colspan='3'>Chapitre ISO27002:&nbsp;<select name='chapter' id='chapter'>\n");
+	printf("<td colspan='3'>Chapitre ISO27002:&nbsp;<select name='chapter' id='chapter' required>\n");
 	printf("<option selected='selected' value=''>&nbsp;</option>\n");
 	while($row = mysqli_fetch_object($res_chapter)) {
 		printf("<option value='%d'>%s - %s</option>\n", $row->id, $row->num, $row->nom);
 	}
 	printf("</select>\n</td>");
 	printf("</tr>\n<tr>\n");
-	printf("<td>Chef de projet:&nbsp;<select name='chef' id='chef'>\n");
+	printf("<td>Chef de projet:&nbsp;<select name='chef' id='chef' required>\n");
 	printf("<option selected='selected' value=''>&nbsp;</option>\n");
 	while($row = mysqli_fetch_object($res_chefproj)) {
 		printf("<option value='%d'>%s %s</option>\n", $row->id, $row->prenom, $row->nom);
 	}
 	printf("</select>\n</td>\n");
-	printf("<td>Date de début:&nbsp;<input type='date' name='datedebut' id='datedebut' min='%s' onchange='fixMinDate(this)' /></td>\n", date('Y-m-d', time()));
-	printf("<td>Date de fin:&nbsp;<input type='date' name='datefin' id='datefin' min='%s' /></td>\n", date('Y-m-d', time()));
+	printf("<td>Date de début:&nbsp;<input type='date' name='datedebut' id='datedebut' min='%s' onchange='fixMinDate(this)' required></td>\n", date('Y-m-d', time()));
+	printf("<td>Date de fin:&nbsp;<input type='date' name='datefin' id='datefin' min='%s' required></td>\n", date('Y-m-d', time()));
 	printf("</tr>\n</table>\n</fieldset>\n");
 	validForms('Enregistrer', 'user.php');
 	printf("</form>\n");
@@ -58,10 +58,10 @@ function selectProjectModif() {
 	$base = dbConnect();
 	$request = sprintf("SELECT * FROM project WHERE directeur='%s'", $_SESSION['uid']);
 	$result = mysqli_query($base, $request);
-	printf("<form method='post' id='modif_project' action='user.php?action=modif_project' onsubmit='return champs_ok(this)'>\n");
+	printf("<form method='post' id='modif_project' action='user.php?action=modif_project'>\n");
 	printf("<fieldset>\n<legend>Modification d'un projet</legend>\n");
 	printf("<table>\n<tr><td>\n");
-	printf("Projet:&nbsp;\n<select name='project' id='project'>\n");
+	printf("Projet:&nbsp;\n<select name='project' id='project' required>\n");
 	printf("<option selected='selected' value=''>&nbsp;</option>\n");
 	while($row = mysqli_fetch_object($result)) {
 		if (!intval($row->complete)) {
@@ -75,38 +75,36 @@ function selectProjectModif() {
 }
 
 
-function modifProject($id) {
-	$id = intval($id);
+function modifProject() {
 	$base = dbConnect();
-	$request = sprintf("SELECT * FROM project WHERE id='%d' LIMIT 1", $id);
+	$request = sprintf("SELECT * FROM project WHERE id='%d' LIMIT 1", $_SESSION['current_project']);
 	$result = mysqli_query($base, $request);
 	$record = mysqli_fetch_object($result);
 	$res_chefproj = mysqli_query($base, "SELECT * FROM users WHERE role='2' OR role='3'");
 	$res_chapter = mysqli_query($base, "SELECT * FROM chapter");
 
-	printf("<form method='post' id='modif_project' action='user.php?action=update_project' onsubmit='return champs_ok(this)'>\n");
+	printf("<form method='post' id='modif_project' action='user.php?action=update_project'>\n");
 	printf("<fieldset>\n<legend>Modification d'un projet</legend>\n");
-	printf("<input type='hidden' size='3' maxlength='3' name='id_project' id='id_project' value='%s'/>\n", $id);
 	printf("<table>\n<tr>\n");
-	printf("<td colspan='3'><input type='text' size='60' maxlength='60' name='nom' id='nom' value=\"%s\" />\n</td>", traiteStringFromBDD($record->nom));
+	printf("<td colspan='3'><input type='text' size='60' maxlength='60' name='nom' id='nom' value='%s' required>\n</td>", traiteStringFromBDD($record->nom));
 	printf("</tr>\n<tr>\n");
-	printf("<td colspan='3'><textarea name='description' id='description' cols='60' rows='3'>%s</textarea></td>\n", traiteStringFromBDD($record->description));
+	printf("<td colspan='3'><textarea name='description' id='description' cols='60' rows='3' required>%s</textarea></td>\n", traiteStringFromBDD($record->description));
 	printf("</tr>\n<tr>\n");
-	printf("<td colspan='3'>Chapitre ISO27002:&nbsp;<select name='chapter' id='chapter'>\n");
+	printf("<td colspan='3'>Chapitre ISO27002:&nbsp;<select name='chapter' id='chapter' required>\n");
 	printf("<option selected='selected' value='%d'>%s</option>\n", intval($record->chapter), getChapter($record->chapter));
 	while($row = mysqli_fetch_object($res_chapter)) {
 		printf("<option value='%d'>%s - %s</option>\n", $row->id, $row->num, $row->nom);
 	}
 	printf("</select>\n</td>");
 	printf("</tr>\n<tr>\n");
-	printf("<td>Chef de projet:&nbsp;<select name='chef' id='chef'>\n");
+	printf("<td>Chef de projet:&nbsp;<select name='chef' id='chef' required>\n");
 	printf("<option selected='selected' value='%s'>%s</option>\n", intval($record->chef), getUser($record->chef));
 	while($row = mysqli_fetch_object($res_chefproj)) {
 		printf("<option value='%d'>%s %s</option>\n", $row->id, $row->prenom, $row->nom);
 	}
 	printf("</select>\n</td>\n");
-	printf("<td>Date de début:&nbsp;<input type='date' name='datedebut' id='datedebut' min='%s' value='%s' onchange='fixMinDate(this)' /></td>\n", $record->datedebut, $record->datedebut);
-	printf("<td>Date de fin:&nbsp;<input type='date' name='datefin' id='datefin' min='%s' value='%s' /></td>\n", $record->datedebut, $record->datefin);
+	printf("<td>Date de début:&nbsp;<input type='date' name='datedebut' id='datedebut' min='%s' value='%s' onchange='fixMinDate(this)' required></td>\n", $record->datedebut, $record->datedebut);
+	printf("<td>Date de fin:&nbsp;<input type='date' name='datefin' id='datefin' min='%s' value='%s' required></td>\n", $record->datedebut, $record->datefin);
 	printf("</tr>\n</table>\n</fieldset>\n");
 	validForms('Modifier', 'user.php', $back=False);
 	printf("</form>\n");
@@ -114,7 +112,8 @@ function modifProject($id) {
 }
 
 
-function recorProject($action) {
+function recordProject($action) {
+	genSyslog(__FUNCTION__);
 	$base = dbConnect();
 	$nom = isset($_POST['nom']) ? traiteStringToBDD($_POST['nom']) : NULL;
 	$description = isset($_POST['description']) ? traiteStringToBDD($_POST['description']) : NULL;
@@ -128,7 +127,7 @@ function recorProject($action) {
 			$request = sprintf("INSERT INTO project (nom, description, chapter, directeur, chef, datedebut, datefin) VALUES ('%s', '%s', '%d', '%d', '%d', '%s', '%s')", $nom, $description, $chapter, $directeur, $chef, $datedebut, $datefin);
 			break;
 		case 'update':
-			$id = isset($_POST['id_project']) ? intval(trim($_POST['id_project'])) : NULL;
+			$id = intval($_SESSION['current_project']);
 			$request = sprintf("UPDATE project SET nom='%s', description='%s', chapter='%d', directeur='%d', chef='%d', datedebut='%s', datefin='%s' WHERE id='%d'", $nom, $description, $chapter, $directeur, $chef, $datedebut, $datefin, $id);
 			break;
 		case 'close':
@@ -137,22 +136,28 @@ function recorProject($action) {
 		default:
 			return false;
 	}
-	if (mysqli_query($base, $request)) {
-		switch ($action) {
-			case 'add':
-				return mysqli_insert_id($base);
-				break;
-			case 'update':
-				return true;
-				break;
-			case 'close':
-				return true;
-				break;
+	if (isset($_SESSION['token'])) {
+		unset($_SESSION['token']);
+		if (mysqli_query($base, $request)) {
+			switch ($action) {
+				case 'add':
+				case 'close':
+					dbDisconnect($base);
+					return true;
+					break;
+				case 'update':
+					unset($_SESSION['current_project']);
+					dbDisconnect($base);
+					return true;
+					break;
+			}
+		} else {
+			dbDisconnect($base);
+			return false;
 		}
 	} else {
 		return false;
 	}
-	dbDisconnect($base);
 }
 
 
@@ -255,6 +260,7 @@ function displayProjectHead() {
 
 
 function addTask() {
+	$_SESSION['token'] = generateToken();
 	$base = dbConnect();
 	$request = sprintf("SELECT * FROM project WHERE id='%d' LIMIT 1", intval($_SESSION['project']));
 	$result = mysqli_query($base, $request);
@@ -264,11 +270,11 @@ function addTask() {
 	$interval = date_diff(date_create($record->datefin), date_create($today));
 	if ($interval->invert) {
 		printf("<div class='task'>\n");
-		printf("<form method='post' id='new_task' action='user.php?action=record_task' onsubmit='return champs_ok(this)'>\n");
+		printf("<form method='post' id='new_task' action='user.php?action=record_task'>\n");
 		printf("<table>\n<tr>\n");
-		printf("<td><input type='text' size='40' maxlength='60' name='nom' id='nom' placeholder='Tâche' /></td>\n");
-		printf("<td>De&nbsp;<input type='date' name='datedebut' id='datedebut' min='%s' max='%s' onchange='fixMinDate(this)' /></td>\n", $record->datedebut, $record->datefin);
-		printf("<td>A&nbsp;<input type='date' name='datefin' id='datefin' min='%s' max='%s' /></td>\n", $record->datedebut, $record->datefin);
+		printf("<td><input type='text' size='40' maxlength='60' name='nom' id='nom' placeholder='Tâche' required></td>\n");
+		printf("<td>De&nbsp;<input type='date' name='datedebut' id='datedebut' min='%s' max='%s' onchange='fixMinDate(this)' required></td>\n", $record->datedebut, $record->datefin);
+		printf("<td>A&nbsp;<input type='date' name='datefin' id='datefin' min='%s' max='%s' required></td>\n", $record->datedebut, $record->datefin);
 		printf("<td><input type='submit' value='+'></td>\n");
 		printf("</tr>\n</table>\n");
 		printf("</form>\n</div>\n");
@@ -342,23 +348,36 @@ function projectDetail() {
 }
 
 
-function recorTask($action) {
+function recordNewTask() {
 	$base = dbConnect();
-	if (in_array($action, array('increase', 'decrease'))) {
-		$id = intval($_GET['value']);
-		$request = sprintf("SELECT avancement FROM task WHERE id='%d' LIMIT 1", $id);
-		$result = mysqli_query($base,$request);
-		$record = mysqli_fetch_object($result);
-		$progress = intval($record->avancement);
-	}
 	$projet = intval($_SESSION['project']);
 	$nom = isset($_POST['nom']) ? traiteStringToBDD($_POST['nom']) : NULL;
 	$datedebut = isset($_POST['datedebut']) ? $_POST['datedebut'] : NULL;
 	$datefin = isset($_POST['datefin']) ? $_POST['datefin'] : NULL;
+	$request = sprintf("INSERT INTO task (projet, nom, datedebut, datefin, avancement) VALUES ('%d', '%s', '%s', '%s', '0')", $projet, $nom, $datedebut, $datefin);
+	if (isset($_SESSION['token'])) {
+		unset($_SESSION['token']);
+		if (mysqli_query($base, $request)) {
+			dbDisconnect($base);
+			return true;
+		} else {
+			dbDisconnect($base);
+			return false;
+		}
+	} else {
+		return false;
+	}
+}
+
+
+function incrDecrTask($action) {
+	$base = dbConnect();
+	$id = intval($_GET['value']);
+	$request = sprintf("SELECT avancement FROM task WHERE id='%d' LIMIT 1", $id);
+	$result = mysqli_query($base,$request);
+	$record = mysqli_fetch_object($result);
+	$progress = intval($record->avancement);
 	switch ($action) {
-		case 'add':
-			$request = sprintf("INSERT INTO task (projet, nom, datedebut, datefin, avancement) VALUES ('%d', '%s', '%s', '%s', '0')", $projet, $nom, $datedebut, $datefin);
-			break;
 		case 'increase':
 			if ($progress < 100) { $progress += 10; }
 			$request = sprintf("UPDATE task SET avancement='%d' WHERE id='%d' ", $progress, $id);
@@ -369,21 +388,12 @@ function recorTask($action) {
 			break;
 	}
 	if (mysqli_query($base, $request)) {
-		switch ($action) {
-			case 'add':
-				return mysqli_insert_id($base);
-				break;
-			case 'increase':
-				return $id;
-				break;
-			case 'decrease':
-				return $id;
-				break;
-		}
+		dbDisconnect($base);
+		return true;
 	} else {
+		dbDisconnect($base);
 		return false;
 	}
-	dbDisconnect($base);
 }
 
 
@@ -513,22 +523,22 @@ function displayKanbanTask($id) {
 function addKanban() {
 	printf("<div id='add_kanban_form' class='modal'>");
 	printf("<div class='modal_content'>");
-	printf("<form method='post' id='new_kanban' action='user.php?action=add_kanban' onsubmit='return kanban_ok(this)'>\n");
+	printf("<form method='post' id='new_kanban' action='user.php?action=add_kanban'>\n");
 	printf("<fieldset>\n<legend>Ajout d'une tâche</legend>\n");
 	printf("<table>\n<tr><td colspan='2'>\n");
-	printf("<input type='text' size='40' maxlength='40' name='nom' id='nom' placeholder='Nom de la tâche' />\n");
+	printf("<input type='text' size='40' maxlength='40' name='nom' id='nom' placeholder='Nom de la tâche' required>\n");
 	printf("</td></tr>\n<tr><td colspan='2'>\n");
-	printf("<textarea name='description' id='description' cols='60' rows='3' placeholder='Description'></textarea>\n");
+	printf("<textarea name='description' id='description' cols='60' rows='3' placeholder='Description' required></textarea>\n");
 	printf("</td></tr>\n<tr>\n");
-	printf("<td>Date de fin:&nbsp;<input type='date' name='datefin' id='datefin' min='%s' /></td>\n", date('Y-m-d', time()));
-	printf("<td>Priorité:&nbsp;<select name='priority' id='priority'>\n");
+	printf("<td>Date de fin:&nbsp;<input type='date' name='datefin' id='datefin' min='%s' required></td>\n", date('Y-m-d', time()));
+	printf("<td>Priorité:&nbsp;<select name='priority' id='priority' required>\n");
 	printf("<option selected='selected' value=''>&nbsp;</option>\n");
 	for ($i=1; $i<=5; $i++) {
 		printf("<option value='%d'>%s</option>\n", $i, $i);
 	}
 	printf("</select>\n</td>");
 	printf("</tr>\n</table>\n</fieldset>\n");
-	validForms('Enregistrer', 'user.php?action=kanban');
+	validForms('Enregistrer', 'user.php');
 	printf("</form>\n");
 	printf("</div></div>");
 }
@@ -537,23 +547,23 @@ function addKanban() {
 function modifyKanban() {
 	printf("<div id='modify_kanban_form' class='modal'>");
 	printf("<div class='modal_content'>");
-	printf("<form method='post' id='modify_kanban' action='user.php?action=modify_kanban' onsubmit='return kanban_ok(this)'>\n");
+	printf("<form method='post' id='modify_kanban' action='user.php?action=modify_kanban'>\n");
 	printf("<fieldset>\n<legend>Modification d'une tâche</legend>\n");
 	printf("<input type='hidden' name='uid' id='uid' value='0' />\n");
 	printf("<table>\n<tr><td colspan='2'>\n");
-	printf("<input type='text' size='40' maxlength='40' name='unom' id='unom' placeholder='Nom de la tâche' />\n");
+	printf("<input type='text' size='40' maxlength='40' name='unom' id='unom' placeholder='Nom de la tâche' required>\n");
 	printf("</td></tr>\n<tr><td colspan='2'>\n");
-	printf("<textarea name='udescription' id='udescription' cols='60' rows='3' placeholder='Description'></textarea>\n");
+	printf("<textarea name='udescription' id='udescription' cols='60' rows='3' placeholder='Description' required></textarea>\n");
 	printf("</td></tr>\n<tr>\n");
-	printf("<td>Date de fin:&nbsp;<input type='date' name='udatefin' id='udatefin' min='%s' /></td>\n", date('Y-m-d', time()));
-	printf("<td>Priorité:&nbsp;<select name='upriority' id='upriority'>\n");
+	printf("<td>Date de fin:&nbsp;<input type='date' name='udatefin' id='udatefin' min='%s' required></td>\n", date('Y-m-d', time()));
+	printf("<td>Priorité:&nbsp;<select name='upriority' id='upriority' required>\n");
 	printf("<option selected='selected' value=''>&nbsp;</option>\n");
 	for ($i=1; $i<=5; $i++) {
 		printf("<option value='%d'>%s</option>\n", $i, $i);
 	}
 	printf("</select>\n</td>");
 	printf("</tr>\n</table>\n</fieldset>\n");
-	validForms('Enregistrer', 'user.php?action=kanban');
+	validForms('Enregistrer', 'user.php');
 	printf("</form>\n");
 	printf("</div></div>");
 }
@@ -587,6 +597,7 @@ function displayKanban() {
 	dbDisconnect($base);
 	addKanban();
 	modifyKanban();
+	printf("<script src='js/dragdrop.js'></script>");
 }
 
 
@@ -621,12 +632,18 @@ function recordKanban($action) {
 			$request = sprintf("DELETE FROM kanban WHERE id='%d'", $_GET['kid']);
 			break;
 	}
-	if (mysqli_query($base, $request)) {
-		return true;
+	if (isset($_SESSION['token'])) {
+		unset($_SESSION['token']);
+		if (mysqli_query($base, $request)) {
+			dbDisconnect($base);
+			return true;
+		} else {
+			dbDisconnect($base);
+			return false;
+		}
 	} else {
 		return false;
 	}
-	dbDisconnect($base);
 }
 
 

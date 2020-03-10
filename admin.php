@@ -27,7 +27,8 @@ session_start();
 $authorizedRole = array('1');
 isSessionValid($authorizedRole);
 headPage($appli_titre, "Administration");
-$script = basename($_SERVER['PHP_SELF']);
+
+
 
 if (isset($_GET['action'])) {
 	switch ($_GET['action']) {
@@ -37,10 +38,10 @@ if (isset($_GET['action'])) {
 		break;
 
 	case 'record_user':
-		if ($id=recordUser('add')) {
-			linkMsg($script, "Utilisateur ajouté dans la base", "ok.png");
+		if (recordUser('add')) {
+			linkMsg($_SESSION['curr_script'], "Utilisateur ajouté dans la base", "ok.png");
 		} else {
-			linkMsg($script, "Erreur d'enregistrement", "alert.png");
+			linkMsg($_SESSION['curr_script'], "Erreur d'enregistrement", "alert.png");
 		}
 		footPage();
 		break;
@@ -49,40 +50,52 @@ if (isset($_GET['action'])) {
 		if (empty($_POST['user'])) {
 			selectUserModif();
 		} else {
-			modifUser($_POST['user']);
+			$_SESSION['current_user'] = $_POST['user'];
+			modifUser();
 		}
 		footPage();
 		break;
 
 	case 'update_user':
-		if ($id=recordUser('update')) {
-		linkMsg($script, "Utilisateur modifié dans la base", "ok.png");
+		if (recordUser('update')) {
+		linkMsg($_SESSION['curr_script'], "Utilisateur modifié dans la base", "ok.png");
 	} else {
-		linkMsg($script, "Erreur de modification", "alert.png");
+		linkMsg($_SESSION['curr_script'], "Erreur de modification", "alert.png");
 	}
 	footPage();
 	break;
 
 	case 'maintenance':
 		maintenanceBDD();
-		footPage($script, "Accueil");
+		footPage($_SESSION['curr_script'], "Accueil");
 		break;
 
 	case 'password':
-		changePassword($script);
+		changePassword();
 		footPage();
 		break;
 
 	case 'chg_password':
 		if (recordNewPassword($_POST['new1'])) {
-			linkMsg($script, "Mot de passe changé avec succès", "ok.png");
+			linkMsg($_SESSION['curr_script'], "Mot de passe changé avec succès", "ok.png");
 		} else {
-			linkMsg($script, "Erreur de changement de mot de passe", "alert.png");
+			linkMsg($_SESSION['curr_script'], "Erreur de changement de mot de passe", "alert.png");
 		}
 		footPage();
 		break;
 
+	case 'rm_token':
+		if (isset($_SESSION['token'])) {
+			unset($_SESSION['token']);
+		}
+		menuAdmin();
+		footPage();
+		break;
+
 	default:
+		if (isset($_SESSION['token'])) {
+			unset($_SESSION['token']);
+		}
 		menuAdmin();
 		footPage();
 		break;
@@ -93,5 +106,3 @@ if (isset($_GET['action'])) {
 }
 
 ?>
-
-<script src='js/schedio.js'></script>

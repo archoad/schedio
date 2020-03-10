@@ -52,17 +52,20 @@ $captchaMode = 'num'; // 'txt' or 'num'
 // Ne pas modifier ces variables !
 date_default_timezone_set('Europe/Paris');
 setlocale(LC_ALL, 'fr_FR.utf8');
-
 ini_set('error_reporting', -1);
 ini_set('display_error', 1);
 ini_set('session.use_trans_sid', 0);
-ini_set('session.use_cookie', 1);
 //ini_set('session.cookie_secure', 1);
-ini_set('session.use_only_cookies', 1);
 ini_set('session.use_strict_mode', 1);
 ini_set('session.cache_limiter', 'nocache');
+ini_set('session.cookie_samesite', 'Strict');
+ini_set('session.cookie_lifetime', 0);
+ini_set('session.use_cookies', 1);
+ini_set('session.use_only_cookies', 1);
 ini_set('session.gc_probability', 1);
 ini_set('session.gc_maxlifetime', 1800); // 30 min
+ini_set('session.sid_length', 48);
+ini_set('session.sid_bits_per_character', 6);
 ini_set('session.cookie_httponly', 1);
 ini_set('session.entropy_length', 32);
 ini_set('session.entropy_file', '/dev/urandom');
@@ -75,6 +78,38 @@ $server_path = dirname($_SERVER['SCRIPT_FILENAME']);
 $cheminMD = sprintf("%s/data/", $server_path);
 // --------------------
 
+
+function menuAdmin() {
+	genSyslog(__FUNCTION__);
+	$_SESSION['curr_script'] = 'admin.php';
+	printf("<div class='row'>\n");
+	printf("<div class='column left'>\n");
+	linkMsg("admin.php?action=new_user", "Ajouter un utilisateur", "add_user.png", 'menu');
+	linkMsg("admin.php?action=modif_user", "Modifier un utilisateur", "modif_user.png", 'menu');
+	printf("</div>\n<div class='column right'>\n");
+	linkMsg("admin.php?action=maintenance", "Maintenance de la Base de Données", "bdd.png", 'menu');
+	linkMsg("admin.php?action=password", "Changer de mot de passe", "cadenas.png", 'menu');
+	printf("</div>\n</div>");
+}
+
+
+function menuUser() {
+	genSyslog(__FUNCTION__);
+	$_SESSION['curr_script'] = 'user.php';
+	printf("<div class='row'>\n");
+	printf("<div class='column left'>\n");
+	linkMsg("user.php?action=project_mgmt", "Gestion de projet", "project_mgmt.png", 'menu');
+	linkMsg("user.php?action=kanban", "Gestion du temps (Kanban)", "kanban.png", 'menu');
+	linkMsg("user.php?action=password", "Changer de mot de passe", "cadenas.png", 'menu');
+	printf("</div>\n<div class='column right'>\n");
+	linkMsg("user.php?action=gantt", "Diagramme de Gantt", "gantt.png", 'menu');
+	if ($_SESSION['role']==='2') {
+		linkMsg("user.php?action=new_project", "Ajouter un projet", "add_project.png", 'menu');
+		linkMsg("user.php?action=modif_project", "Modifier un projet", "modif_project.png", 'menu');
+	}
+	printf("</div>\n</div>");
+
+}
 
 
 function dbConnect(){
@@ -99,13 +134,16 @@ function dbDisconnect($dbh){
 
 function destroySession() {
 	genSyslog(__FUNCTION__);
+	session_unset();
 	session_destroy();
-	unset($_SESSION);
+	session_write_close();
+	setcookie(session_name(),'',0,'/');
 	header('Location: schedio.php');
 }
 
 
 function isSessionValid($role) {
+	genSyslog(__FUNCTION__);
 	if (!isset($_SESSION['uid']) OR (!in_array($_SESSION['role'], $role))) {
 		destroySession();
 		exit();
@@ -114,10 +152,11 @@ function isSessionValid($role) {
 
 
 function infoSession() {
+	$_SESSION['rand'] = genNonce();
 	$infoDay = sprintf("%s - %s", $_SESSION['day'], $_SESSION['hour']);
 	$infoNav = sprintf("%s - %s - %s", $_SESSION['os'], $_SESSION['browser'], $_SESSION['ipaddr']);
 	$infoUser = sprintf("Connecté en tant que <b>%s %s</b>", $_SESSION['prenom'], $_SESSION['nom']);
-	$logoff = sprintf("<a href='schedio.php?action=disconnect'>Déconnexion&nbsp;<img alt='logoff' src='pict/turnoff.png' width='10'></a>");
+	$logoff = sprintf("<a href='schedio.php?rand=%s&action=disconnect'>Déconnexion&nbsp;<img alt='logoff' src='pict/turnoff.png' width='10'></a>", $_SESSION['rand']);
 	return sprintf("Powered by σχέδιο - %s - %s - %s - %s", $infoDay, $infoNav, $infoUser, $logoff);
 }
 
@@ -203,12 +242,26 @@ function set_var_utf8(){
 }
 
 
-function get_var_utf8(){
-	$param1 = ini_get('mbstring.internal_encoding');
-	$param2 = ini_get('mbstring.http_input');
-	$param3 = ini_get('mbstring.http_output');
-	$param4 = ini_get('mbstring.detect_order');
-	printf("<b>%s %s %s %s</b>", $param1, $param2, $param3, $param4);
+function genNonce() {
+	$nonce = random_bytes(8);
+	return base64_encode($nonce);
+}
+
+
+function genCspPolicy() {
+	global $cspReport;
+	$_SESSION['nonce'] = genNonce();
+	$cspPolicy = "Content-Security-Policy: ";
+	$cspPolicy .= "default-src 'none' ; ";
+	$cspPolicy .= sprintf("script-src 'nonce-%s' ; ", $_SESSION['nonce']);
+	$cspPolicy .= sprintf("style-src 'nonce-%s' ; ", $_SESSION['nonce']);
+	$cspPolicy .= "img-src 'self' ; ";
+	$cspPolicy .= "font-src 'self' ; ";
+	$cspPolicy .= "connect-src 'self' ; ";
+	$cspPolicy .= "frame-ancestors 'none' ; ";
+	$cspPolicy .= "base-uri 'none' ; ";
+	$cspPolicy .= sprintf("report-uri %s ; ", $cspReport);
+	return $cspPolicy;
 }
 
 
@@ -247,6 +300,7 @@ function headPage($titre, $sousTitre=''){
 	printf("<link rel='icon' type='image/png' href='pict/favicon.png' />\n");
 	printf("<link href='js/vis-timeline-graph2d.min.css' rel='stylesheet' type='text/css' media='all' />\n");
 	printf("<link href='styles.php' rel='StyleSheet' type='text/css' media='all' />\n");
+	printf("<script src='js/schedio.js'></script>");
 	printf("<title>%s</title>\n", $titre);
 	printf("</head>\n<body>\n<h1>%s</h1>\n", $titre);
 	if ($sousTitre !== '') {
@@ -256,6 +310,7 @@ function headPage($titre, $sousTitre=''){
 
 
 function footPage($link='', $msg=''){
+	genSyslog(__FUNCTION__);
 	if ($_SESSION['role']==='100') {
 		printf("<div class='footer'>\n");
 		printf("Aide en ligne - Retour à la page d'accueil <a href='schedio.php' class='btnWarning'>cliquer ici</a>\n");
@@ -277,13 +332,14 @@ function footPage($link='', $msg=''){
 
 
 function validForms($msg, $url, $back=True) {
+	$_SESSION['token'] = generateToken();
 	printf("<fieldset>\n<legend>Validation</legend>\n");
 	printf("<table><tr><td>\n");
 	printf("<input type='submit' value='%s' />\n", $msg);
 	if ($back) {
 		printf("<input type='reset' value='Effacer' />\n");
 	}
-	printf("<a class='valid' href='%s'>Revenir</a>\n", $url);
+	printf("<a class='valid' href='%s?action=rm_token'>Revenir</a>\n", $url);
 	printf("</td></tr>\n</table>\n</fieldset>\n");
 }
 
@@ -352,24 +408,27 @@ function generateToken() {
 }
 
 
-function changePassword($script) {
+function changePassword() {
 	genSyslog(__FUNCTION__);
+	$script = $_SESSION['curr_script'];
 	$base = dbConnect();
 	$request = sprintf("SELECT * FROM users WHERE login='%s' LIMIT 1", $_SESSION['login']);
 	$result=mysqli_query($base, $request);
 	dbDisconnect($base);
 	if (mysqli_num_rows($result)) {
 		$row = mysqli_fetch_array($result);
-		printf("<form method='post' id='chg_password' action='%s?action=chg_password' onsubmit='return password_ok(this)'>\n", $script);
+		printf("<form method='post' id='chg_password' action='%s?action=chg_password'>\n", $script);
 		printf("<fieldset>\n<legend>Changement de mot de passe</legend>\n");
 		printf("<table>\n<tr><td>\n");
-		printf("<input type='password' size='50' maxlength='50' name='new1' id='new1' placeholder='Nouveau mot de passe' />\n");
+		printf("<input type='password' size='50' maxlength='50' name='new1' id='new1' placeholder='Nouveau mot de passe' autocomplete='new-password' required />\n");
 		printf("</td></tr>\n<tr><td>\n");
-		printf("<input type='password' size='50' maxlength='50' name='new2' id='new2' placeholder='Saisissez à nouveau le mot de passe'/>\n");
+		printf("<input type='password' size='50' maxlength='50' name='new2' id='new2' placeholder='Saisissez à nouveau le mot de passe' autocomplete='new-password' required/>\n");
 		printf("</td></tr>\n</table>\n");
 		printf("</fieldset>\n");
 		validForms('Enregistrer', $script);
 		printf("</form>\n");
+		printf("<script>document.getElementById('new1').addEventListener('change', function(){validatePattern();});</script>\n");
+		printf("<script>document.getElementById('new2').addEventListener('change', function(){validatePassword();});</script>\n");
 	} else {
 		linkMsg($script, "Erreur de compte.", "alert.png");
 		footPage($script, "Accueil");
@@ -382,43 +441,20 @@ function recordNewPassword($passwd) {
 	$base = dbConnect();
 	$passwd = password_hash($passwd, PASSWORD_BCRYPT);
 	$request = sprintf("UPDATE users SET password='%s' WHERE login='%s'", $passwd, $_SESSION['login']);
-	if (mysqli_query($base, $request)) {
-		return true;
+	if (isset($_SESSION['token'])) {
+		unset($_SESSION['token']);
+		if (mysqli_query($base, $request)) {
+			dbDisconnect($base);
+			return true;
+		} else {
+			dbDisconnect($base);
+			return false;
+		}
 	} else {
+		dbDisconnect($base);
 		return false;
 	}
-	dbDisconnect($base);
-}
-
-
-function menuAdmin() {
-	genSyslog(__FUNCTION__);
-	printf("<div class='row'>\n");
-	printf("<div class='column left'>\n");
-	linkMsg("admin.php?action=new_user", "Ajouter un utilisateur", "add_user.png", 'menu');
-	linkMsg("admin.php?action=modif_user", "Modifier un utilisateur", "modif_user.png", 'menu');
-	printf("</div>\n<div class='column right'>\n");
-	linkMsg("admin.php?action=maintenance", "Maintenance de la Base de Données", "bdd.png", 'menu');
-	linkMsg("admin.php?action=password", "Changer de mot de passe", "cadenas.png", 'menu');
-	printf("</div>\n</div>");
-}
-
-
-function menuUser() {
-	genSyslog(__FUNCTION__);
-	printf("<div class='row'>\n");
-	printf("<div class='column left'>\n");
-	linkMsg("user.php?action=project_mgmt", "Gestion de projet", "project_mgmt.png", 'menu');
-	linkMsg("user.php?action=kanban", "Gestion du temps (Kanban)", "kanban.png", 'menu');
-	linkMsg("user.php?action=password", "Changer de mot de passe", "cadenas.png", 'menu');
-	printf("</div>\n<div class='column right'>\n");
-	linkMsg("user.php?action=gantt", "Diagramme de Gantt", "gantt.png", 'menu');
-	if ($_SESSION['role']==='2') {
-		linkMsg("user.php?action=new_project", "Ajouter un projet", "add_project.png", 'menu');
-		linkMsg("user.php?action=modif_project", "Modifier un projet", "modif_project.png", 'menu');
-	}
-	printf("</div>\n</div>");
-
+	return false;
 }
 
 
