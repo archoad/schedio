@@ -454,7 +454,7 @@ function actionsManagement() {
 		printf("<td style='text-align:center;'><input type='submit' value='Enregistrer'></input></td>\n");
 		printf("</tr>\n</table>\n</form>\n</div>\n");
 		printf("<link rel='stylesheet' href='js/simplemde.min.css'>");
-		printf("<script type='text/javascript' src='js/simplemde.min.js'></script>");
+		printf("<script src='js/simplemde.min.js'></script>");
 		printf("<script>var simplemde = new SimpleMDE({ element: document.getElementById('description') });</script>");
 	} else {
 		linkMsg("user.php", "Erreur d'ouverture du fichier.", "alert.png");
