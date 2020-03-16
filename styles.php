@@ -79,8 +79,15 @@ switch ($_SESSION['theme']) {
 	font-style: normal;
 	font-weight: 400;
 	font-display: swap;
-	src: local('Montserrat-Regular'), url(data/montserrat.woff2) format('woff2');
-	unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+	src: local('Montserrat-Regular'), url(fonts/montserrat.woff2) format('woff2');
+}
+
+@font-face {
+	font-family: Raleway;
+	font-style: normal;
+	font-weight: 400;
+	font-display: swap;
+	src: local('Raleway-Regular'), url(fonts/raleway.woff2) format('woff2');
 }
 
 :root {
@@ -100,6 +107,7 @@ switch ($_SESSION['theme']) {
 	--shadowNormal: 6px 6px 6px rgba(0, 0, 0, 0.2);
 	--shadowHover: 2px 2px 2px rgba(0, 0, 0, 0.2);
 	--shadowAuth: 0 0 20px 0 rgba(0, 0, 0, 0.2), 0 5px 5px 0 rgba(0, 0, 0, 0.24);
+	--defaultFont: Raleway;
 }
 
 * {
@@ -115,7 +123,7 @@ body {
 	height: 100%;
 	margin: 0;
 	background-color: var(--bg0Color);
-	font-family: Montserrat;
+	font-family: var(--defaultFont);
 	font-size: 10pt;
 }
 
@@ -187,7 +195,7 @@ input, select {
 	border-radius: 4px;
 	box-sizing: border-box;
 	font-size: 10pt;
-	font-family: Montserrat;
+	font-family: var(--defaultFont);
 }
 
 input[type=button],
@@ -287,7 +295,7 @@ textarea {
 	outline: none;
 	box-shadow: var(--shadowHover);
 	font-size: 10pt;
-	font-family: Montserrat;
+	font-family: var(--defaultFont);
 }
 
 .pleft {
