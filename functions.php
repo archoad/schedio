@@ -125,7 +125,7 @@ function dbConnect() {
 	$link = mysqli_connect($servername, $login, $passwd, $dbname);
 	if (!$link) {
 		$msg = sprintf("Erreur de connexion: %d (%s)", mysqli_connect_errno(),  mysqli_connect_error());
-		linkMsg("evalsmsi.php", $msg, "alert.png");
+		linkMsg("schedio.php", $msg, "alert.png");
 		footPage();
 	} else {
 		mysqli_set_charset($link , 'utf8');
