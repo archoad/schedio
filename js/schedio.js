@@ -1,3 +1,14 @@
+function validatePattern() {
+	var pattern = /^(?=.*[a-z])(?=.*[0-9])(?=.{6,})/;
+	var pass1 = document.getElementById('new1').value;
+	if (pass1.match(pattern)) {
+		document.getElementById('new1').setCustomValidity('');
+	} else {
+		document.getElementById('new1').setCustomValidity('Doit contenir majuscules, minuscules, chiffres et au moins 6 caractères');
+	}
+}
+
+
 function validatePassword() {
 	var pass1 = document.getElementById('new1').value;
 	var pass2 = document.getElementById('new2').value;
@@ -9,7 +20,8 @@ function validatePassword() {
 }
 
 
-function fixMinDate(elt) {
+function fixMinDate() {
+	let elt = document.getElementById('datedebut');
 	document.getElementById('datefin').min = elt.value;
 }
 
@@ -36,6 +48,13 @@ function displayModifyModal(data) {
 	document.getElementById('udescription').value = items[2];
 	document.getElementById('udatefin').value = items[3];
 	document.getElementById('upriority').value = items[4];
+	modal.style.display = 'block';
+}
+
+
+function displayDelModal(id) {
+	var modal = document.getElementById('del_kanban_form');
+	document.getElementById('delid').value = id;
 	modal.style.display = 'block';
 }
 

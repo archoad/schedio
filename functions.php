@@ -37,7 +37,7 @@ $passwd = 'webphpsql';
 $appli_titre = ("Schedio - Gestion de projet");
 $appli_titre_short = ("Schedio");
 // Thème CSS
-$cssTheme = 'standard';
+$cssTheme = 'beige'; // glp, beige, blue
 // Image accueil
 $auhtPict = 'pict/accueil.png';
 // Mode captcha
@@ -54,8 +54,10 @@ date_default_timezone_set('Europe/Paris');
 setlocale(LC_ALL, 'fr_FR.utf8');
 ini_set('error_reporting', -1);
 ini_set('display_error', 1);
+ini_set('session.name', '__SECURE-PHPSESSID');
+ini_set('session.cookie_samesite', 'Strict');
 ini_set('session.use_trans_sid', 0);
-//ini_set('session.cookie_secure', 1);
+ini_set('session.cookie_secure', 1);
 ini_set('session.use_strict_mode', 1);
 ini_set('session.cache_limiter', 'nocache');
 ini_set('session.cookie_samesite', 'Strict');
@@ -76,6 +78,12 @@ ini_set('filter.default_flags', 0);
 $cspReport = "csp_parser.php";
 $server_path = dirname($_SERVER['SCRIPT_FILENAME']);
 $cheminMD = sprintf("%s/data/", $server_path);
+
+$cookie_timeout = 3600;
+$cookie_domain = "";
+$session_secure = true;
+$cookie_httponly = true;
+$cookie_samesite = "Strict";
 // --------------------
 
 
@@ -112,7 +120,7 @@ function menuUser() {
 }
 
 
-function dbConnect(){
+function dbConnect() {
 	global $servername, $dbname, $login, $passwd;
 	$link = mysqli_connect($servername, $login, $passwd, $dbname);
 	if (!$link) {
@@ -126,7 +134,7 @@ function dbConnect(){
 }
 
 
-function dbDisconnect($dbh){
+function dbDisconnect($dbh) {
 	mysqli_close($dbh);
 	$dbh=0;
 }
@@ -152,7 +160,7 @@ function isSessionValid($role) {
 
 
 function infoSession() {
-	$_SESSION['rand'] = genNonce();
+	$_SESSION['rand'] = genNonce(16);
 	$infoDay = sprintf("%s - %s", $_SESSION['day'], $_SESSION['hour']);
 	$infoNav = sprintf("%s - %s - %s", $_SESSION['os'], $_SESSION['browser'], $_SESSION['ipaddr']);
 	$infoUser = sprintf("Connecté en tant que <b>%s %s</b>", $_SESSION['prenom'], $_SESSION['nom']);
@@ -234,7 +242,7 @@ function detectOS() {
 }
 
 
-function set_var_utf8(){
+function set_var_utf8() {
 	ini_set('mbstring.internal_encoding', 'UTF-8');
 	ini_set('mbstring.http_input', 'UTF-8');
 	ini_set('mbstring.http_output', 'UTF-8');
@@ -242,19 +250,23 @@ function set_var_utf8(){
 }
 
 
-function genNonce() {
-	$nonce = random_bytes(8);
-	return base64_encode($nonce);
+function genNonce($length) {
+	$nonce = random_bytes($length);
+	$b64 = base64_encode($nonce);
+	$url = strtr($b64, '+/', '-_');
+	return rtrim($url, '=');
 }
 
 
 function genCspPolicy() {
 	global $cspReport;
-	$_SESSION['nonce'] = genNonce();
+	$_SESSION['nonce'] = genNonce(8);
 	$cspPolicy = "Content-Security-Policy: ";
 	$cspPolicy .= "default-src 'none' ; ";
 	$cspPolicy .= sprintf("script-src 'nonce-%s' ; ", $_SESSION['nonce']);
+	$cspPolicy .= sprintf("script-src-elem 'nonce-%s' ; ", $_SESSION['nonce']);
 	$cspPolicy .= sprintf("style-src 'nonce-%s' ; ", $_SESSION['nonce']);
+	$cspPolicy .= sprintf("style-src-elem 'nonce-%s' ; ", $_SESSION['nonce']);
 	$cspPolicy .= "img-src 'self' ; ";
 	$cspPolicy .= "font-src 'self' ; ";
 	$cspPolicy .= "connect-src 'self' ; ";
@@ -265,7 +277,7 @@ function genCspPolicy() {
 }
 
 
-function genSyslog($caller) {
+function genSyslog($caller, $msg='') {
 	global $progVersion;
 	$log = array();
 	$log[] = array('program' => 'schedio', 'version' => $progVersion);
@@ -279,7 +291,10 @@ function genSyslog($caller) {
 	if (isset($_SESSION['quiz'])) {
 		$log[] = array('quiz' => $_SESSION['quiz']);
 	}
-	openlog("evalsmsi", LOG_PID, LOG_SYSLOG);
+	if (!empty($msg)) {
+		$log[] = array('message' => $msg);
+	}
+	openlog("schedio", LOG_PID, LOG_SYSLOG);
 	syslog(LOG_INFO, json_encode($log));
 	closelog();
 }
@@ -287,20 +302,35 @@ function genSyslog($caller) {
 
 function headPage($titre, $sousTitre=''){
 	genSyslog(__FUNCTION__);
+	$cspPolicy = genCspPolicy();
+	$nonce = $_SESSION['nonce'];
 	set_var_utf8();
 	header("cache-control: no-cache, must-revalidate");
 	header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");
 	header("Content-type: text/html; charset=utf-8");
-	header('X-Content-Type-Options: "nosniff"');
+	header("X-Content-Type-Options: nosniff");
 	header("X-XSS-Protection: 1; mode=block");
 	header("X-Frame-Options: deny");
+	header($cspPolicy);
 	printf("<!DOCTYPE html>\n<html lang='fr-FR'>\n<head>\n");
 	printf("<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />\n");
+	printf("<meta name='author' content='Michel Dubois' />\n");
 	printf("<meta http-equiv='refresh' content='600'>");
 	printf("<link rel='icon' type='image/png' href='pict/favicon.png' />\n");
-	printf("<link href='js/vis-timeline-graph2d.min.css' rel='stylesheet' type='text/css' media='all' />\n");
-	printf("<link href='styles.php' rel='StyleSheet' type='text/css' media='all' />\n");
-	printf("<script src='js/schedio.js'></script>");
+	printf("<link nonce='%s' href='styles/style.%s.css' rel='StyleSheet' type='text/css' media='all' />\n", $nonce, $_SESSION['theme']);
+	printf("<link nonce='%s' href='styles/style.base.css' rel='StyleSheet' type='text/css' media='all' />\n", $nonce);
+	printf("<script nonce='%s' src='js/schedio.js'></script>\n", $nonce);
+	if (isset($_SESSION['curr_script'])) {
+		$script = $_SESSION['curr_script'];
+		if ($script === 'user.php') {
+			printf("<script nonce='%s' src='js/graphs.js'></script>\n", $nonce);
+			printf("<link nonce='%s' href='js/vis-timeline-graph2d.min.css' rel='stylesheet' type='text/css' media='all' />\n", $nonce);
+			printf("<script nonce='%s' src='js/vis-timeline-graph2d.min.js'></script>\n", $nonce);
+			printf("<link nonce='%s' href='js/font-awesome.min.css' rel='stylesheet' type='text/css' media='all'>\n", $nonce);
+			printf("<link nonce='%s' href='js/simplemde.min.css' rel='stylesheet' type='text/css' media='all'>\n", $nonce);
+			printf("<script nonce='%s' src='js/simplemde.min.js'></script>\n", $nonce);
+		}
+	}
 	printf("<title>%s</title>\n", $titre);
 	printf("</head>\n<body>\n<h1>%s</h1>\n", $titre);
 	if ($sousTitre !== '') {
@@ -332,6 +362,7 @@ function footPage($link='', $msg=''){
 
 
 function validForms($msg, $url, $back=True) {
+	if (isset($_SESSION['token'])) { unset($_SESSION['token']); }
 	$_SESSION['token'] = generateToken();
 	printf("<fieldset>\n<legend>Validation</legend>\n");
 	printf("<table><tr><td>\n");
@@ -339,7 +370,12 @@ function validForms($msg, $url, $back=True) {
 	if ($back) {
 		printf("<input type='reset' value='Effacer' />\n");
 	}
-	printf("<a class='valid' href='%s?action=rm_token'>Revenir</a>\n", $url);
+	if ($url === 'kanban') {
+		$action = 'kanban_rm_token';
+	} else {
+		$action = 'rm_token';
+	}
+	printf("<a class='valid' href='%s?action=%s'>Revenir</a>\n", $_SESSION['curr_script'], $action);
 	printf("</td></tr>\n</table>\n</fieldset>\n");
 }
 
@@ -411,6 +447,7 @@ function generateToken() {
 function changePassword() {
 	genSyslog(__FUNCTION__);
 	$script = $_SESSION['curr_script'];
+	$nonce = $_SESSION['nonce'];
 	$base = dbConnect();
 	$request = sprintf("SELECT * FROM users WHERE login='%s' LIMIT 1", $_SESSION['login']);
 	$result=mysqli_query($base, $request);
@@ -427,10 +464,10 @@ function changePassword() {
 		printf("</fieldset>\n");
 		validForms('Enregistrer', $script);
 		printf("</form>\n");
-		printf("<script>document.getElementById('new1').addEventListener('change', function(){validatePattern();});</script>\n");
-		printf("<script>document.getElementById('new2').addEventListener('change', function(){validatePassword();});</script>\n");
+		printf("<script nonce='%s'>document.getElementById('new1').addEventListener('change', function() {validatePattern();});</script>\n", $nonce);
+		printf("<script nonce='%s'>document.getElementById('new2').addEventListener('change', function() {validatePassword();});</script>\n", $nonce);
 	} else {
-		linkMsg($script, "Erreur de compte.", "alert.png");
+		linkMsg("#", "Erreur de compte.", "alert.png");
 		footPage($script, "Accueil");
 	}
 }
@@ -520,7 +557,9 @@ function taskProgressBar($id) {
 	$record = mysqli_fetch_object($result);
 	dbDisconnect($base);
 	$percentage = intval($record->avancement);
-	$result = sprintf("<div class='task-container'>\n<div class='task-background'>\n<div class='task-foreground' style='width: %d%%'>%d%%</div>\n</div>\n</div>\n", $percentage, $percentage);
+	$percentStyle = sprintf("percent%d", $percentage);
+	printf("<style nonce='%s' type='text/css'>.%s { width: %d%%; }</style>", $_SESSION['nonce'], $percentStyle, $percentage);
+	$result = sprintf("<div class='task-container'>\n<div class='task-background'>\n<div class='task-foreground %s'>%d%%</div>\n</div>\n</div>\n", $percentStyle, $percentage);
 	return $result;
 }
 
@@ -545,7 +584,9 @@ function computeProjectProgress($id) {
 
 function projectProgressBar($id) {
 	$percentage = computeProjectProgress($id);
-	$result = sprintf("<div class='project-container'>\n<div class='project-background'>\n<div class='project-foreground' style='width: %d%%'>%d%%</div>\n</div>\n</div>\n", $percentage, $percentage);
+	$percentStyle = sprintf("percent%d", $percentage);
+	printf("<style nonce='%s' type='text/css'>.%s { width: %d%%; }</style>", $_SESSION['nonce'], $percentStyle, $percentage);
+	$result = sprintf("<div class='project-container'>\n<div class='project-background'>\n<div class='project-foreground %s'>%d%%</div>\n</div>\n</div>\n", $percentStyle, $percentage);
 	return $result;
 }
 

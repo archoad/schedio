@@ -57,7 +57,7 @@ function numCaptcha($image) {
 	$val1 = rand(1, 5);
 	$val2 = rand(1, 5);
 	$_SESSION['sess_captcha'] = $val1 * $val2;
-	$captchaString = $captchaNumber[$val1-1].'*'.$captchaNumber[$val2-1];
+	$captchaString = $captchaNumber[$val1-1].'*'.$captchaNumber[$val2-1].'=';
 	$textColor = imagecolorallocate($image, 40, 45, 50);
 	imagestring($image, 3, 0, 4, $captchaString, $textColor);
 }

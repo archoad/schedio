@@ -204,20 +204,24 @@ if (isset($_GET['action'])) {
 		break;
 
 	case 'del_kanban':
-		if (isset($_GET['kid'])) {
-			if (recordKanban('delete')) {
-				header("Location: ".$_SESSION['curr_script']."?action=kanban");
-			} else {
-				linkMsg($_SESSION['curr_script'], "Erreur d'effacement", "alert.png");
-				footPage();
-			}
-		} else {
+		if (recordKanban('delete')) {
 			header("Location: ".$_SESSION['curr_script']."?action=kanban");
+		} else {
+			linkMsg($_SESSION['curr_script'], "Erreur d'effacement", "alert.png");
+			footPage();
 		}
 		break;
 
 	case 'gantt':
 		displayGantts();
+		footPage($_SESSION['curr_script'], "Accueil");
+		break;
+
+	case 'kanban_rm_token':
+		if (isset($_SESSION['token'])) {
+			unset($_SESSION['token']);
+		}
+		displayKanban();
 		footPage($_SESSION['curr_script'], "Accueil");
 		break;
 
@@ -244,6 +248,3 @@ if (isset($_GET['action'])) {
 
 
 ?>
-
-<script src='js/graphs.js'></script>
-<script src='js/vis-timeline-graph2d.min.js'></script>

@@ -57,7 +57,7 @@
 	var droppersLen = droppers.length;
 	for(var i = 0 ; i < droppersLen ; i++) {
 		if (droppers[i].id == 'progress') {
-			if (droppers[i].childElementCount >= 4) {
+			if (droppers[i].childElementCount >= 8) {
 				continue;
 			} else {
 				dndHandler.applyDropEvents(droppers[i]);

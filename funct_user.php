@@ -45,12 +45,13 @@ function createProject() {
 		printf("<option value='%d'>%s %s</option>\n", $row->id, $row->prenom, $row->nom);
 	}
 	printf("</select>\n</td>\n");
-	printf("<td>Date de début:&nbsp;<input type='date' name='datedebut' id='datedebut' min='%s' onchange='fixMinDate(this)' required></td>\n", date('Y-m-d', time()));
+	printf("<td>Date de début:&nbsp;<input type='date' name='datedebut' id='datedebut' min='%s' required></td>\n", date('Y-m-d', time()));
 	printf("<td>Date de fin:&nbsp;<input type='date' name='datefin' id='datefin' min='%s' required></td>\n", date('Y-m-d', time()));
 	printf("</tr>\n</table>\n</fieldset>\n");
 	validForms('Enregistrer', 'user.php');
 	printf("</form>\n");
 	dbDisconnect($base);
+	printf("<script nonce='%s'>document.getElementById('datedebut').addEventListener('change', function() {fixMinDate();});</script>\n", $_SESSION['nonce']);
 }
 
 
@@ -103,12 +104,13 @@ function modifProject() {
 		printf("<option value='%d'>%s %s</option>\n", $row->id, $row->prenom, $row->nom);
 	}
 	printf("</select>\n</td>\n");
-	printf("<td>Date de début:&nbsp;<input type='date' name='datedebut' id='datedebut' min='%s' value='%s' onchange='fixMinDate(this)' required></td>\n", $record->datedebut, $record->datedebut);
+	printf("<td>Date de début:&nbsp;<input type='date' name='datedebut' id='datedebut' min='%s' value='%s' required></td>\n", $record->datedebut, $record->datedebut);
 	printf("<td>Date de fin:&nbsp;<input type='date' name='datefin' id='datefin' min='%s' value='%s' required></td>\n", $record->datedebut, $record->datefin);
 	printf("</tr>\n</table>\n</fieldset>\n");
 	validForms('Modifier', 'user.php', $back=False);
 	printf("</form>\n");
 	dbDisconnect($base);
+	printf("<script nonce='%s'>document.getElementById('datedebut').addEventListener('change', function() {fixMinDate();});</script>\n", $_SESSION['nonce']);
 }
 
 
@@ -240,7 +242,7 @@ function displayProjectHead() {
 	if (intval($record->complete)) {
 		printf("Projet clos");
 	} else {
-		printf("<div style='display: table; margin: auto;'><div style='display: table-cell;'>Avancement</div><div style='display: table-cell;'>%s</div></div>", projectProgressBar($_SESSION['project']));
+		printf("<div class='tableauto'><div class='tablecell'>Avancement</div><div class='tablecell'>%s</div></div>", projectProgressBar($_SESSION['project']));
 	}
 	printf("</th>\n");
 	printf("</tr>\n<tr>\n");
@@ -273,14 +275,15 @@ function addTask() {
 		printf("<form method='post' id='new_task' action='user.php?action=record_task'>\n");
 		printf("<table>\n<tr>\n");
 		printf("<td><input type='text' size='40' maxlength='60' name='nom' id='nom' placeholder='Tâche' required></td>\n");
-		printf("<td>De&nbsp;<input type='date' name='datedebut' id='datedebut' min='%s' max='%s' onchange='fixMinDate(this)' required></td>\n", $record->datedebut, $record->datefin);
+		printf("<td>De&nbsp;<input type='date' name='datedebut' id='datedebut' min='%s' max='%s' required></td>\n", $record->datedebut, $record->datefin);
 		printf("<td>A&nbsp;<input type='date' name='datefin' id='datefin' min='%s' max='%s' required></td>\n", $record->datedebut, $record->datefin);
 		printf("<td><input type='submit' value='+'></td>\n");
 		printf("</tr>\n</table>\n");
 		printf("</form>\n</div>\n");
+		printf("<script nonce='%s'>document.getElementById('datedebut').addEventListener('change', function() {fixMinDate();});</script>\n", $_SESSION['nonce']);
 	} else {
 		printf("<div class='project'>\n");
-		printf("<table><tr><td style='text-align:center;'>Date de fin de projet dépassée. Impossible de rajouter une tâche.</td></tr></table>\n");
+		printf("<table><tr><td class='text-align:center;'>Date de fin de projet dépassée. Impossible de rajouter une tâche.</td></tr></table>\n");
 		printf("</div>\n");
 	}
 }
@@ -300,17 +303,17 @@ function displayTasks($data) {
 		if ($closed) {
 			printf("<td>&nbsp;</td>\n");
 		} elseif (intval($_SESSION['role']) == 4) {
-			printf("<td style='text-align:center;'><a class='action_plus' href='user.php?action=read_actions&value=%d'>&rarrb;</a></td>\n", $row->id);
+			printf("<td class='center'><a class='action_plus' href='user.php?action=read_actions&value=%d'>&rarrb;</a></td>\n", $row->id);
 		} else {
-			printf("<td style='text-align:center;'><a class='action_plus' href='user.php?action=actions&value=%d'>+</a></td>\n", $row->id);
+			printf("<td class='center'><a class='action_plus' href='user.php?action=actions&value=%d'>+</a></td>\n", $row->id);
 		}
-		printf("<td><div style='display: table; margin: auto;'>");
+		printf("<td><div class='tableauto'>");
 		if ((!$closed) and (intval($_SESSION['role']) != 4)) {
-			printf("<div style='display: table-cell;'><a class='project_minus' href='user.php?action=task_decrease&value=%d'>-</a></div>", $row->id);
+			printf("<div class='tablecell'><a class='project_minus' href='user.php?action=task_decrease&value=%d'>-</a></div>", $row->id);
 		}
-		printf("<div style='display: table-cell;'>%s</div>", taskProgressBar($row->id));
+		printf("<div class='tablecell'>%s</div>", taskProgressBar($row->id));
 		if ((!$closed) and (intval($_SESSION['role']) != 4)) {
-			printf("<div style='display: table-cell;'><a class='project_plus' href='user.php?action=task_increase&value=%d'>+</a></div>", $row->id);
+			printf("<div class='tablecell'><a class='project_plus' href='user.php?action=task_increase&value=%d'>+</a></div>", $row->id);
 		}
 		printf("</div></td>\n");
 		printf("</tr>\n");
@@ -418,9 +421,9 @@ function displayTaskHead() {
 	printf("<td>Début: %s</td>", displayDate($record->datedebut));
 	printf("<td>Fin: %s</td>", displayDate($record->datefin));
 	printf("<td>Durée: %s</td>", computeDuration($record->datedebut, $record->datefin));
-	printf("<td><div style='display: table; margin: auto;'>");
-	printf("<div style='display: table-cell;'>Avancement</div>");
-	printf("<div style='display: table-cell;'>%s</div>", taskProgressBar($record->id));
+	printf("<td><div class='tableauto'>");
+	printf("<div class='tablecell'>Avancement</div>");
+	printf("<div class='tablecell'>%s</div>", taskProgressBar($record->id));
 	printf("</div></td>\n");
 	printf("</tr></table></div>");
 }
@@ -451,11 +454,9 @@ function actionsManagement() {
 		}
 		fclose($handle);
 		printf("</tr><tr>\n");
-		printf("<td style='text-align:center;'><input type='submit' value='Enregistrer'></input></td>\n");
+		printf("<td class='center'><input type='submit' value='Enregistrer'></input></td>\n");
 		printf("</tr>\n</table>\n</form>\n</div>\n");
-		printf("<link rel='stylesheet' href='js/simplemde.min.css'>");
-		printf("<script src='js/simplemde.min.js'></script>");
-		printf("<script>var simplemde = new SimpleMDE({ element: document.getElementById('description') });</script>");
+		printf("<script nonce='%s'>var simplemde = new SimpleMDE({ autoDownloadFontAwesome: false, spellChecker: false, element: document.getElementById('description') });</script>", $_SESSION['nonce']);
 	} else {
 		linkMsg("user.php", "Erreur d'ouverture du fichier.", "alert.png");
 	}
@@ -502,8 +503,8 @@ function displayKanbanTask($id) {
 
 	$data = sprintf("%d:%s:%s:%s:%d", $record->id, traiteStringFromBDD($record->nom), traiteStringFromBDD($record->description), $record->datefin, $record->priority);
 	$data = base64_encode($data);
-	printf("<div id='task%d' class='draggable' ondblclick='displayModifyModal(\"%s\")'>", $record->id, $data);
-	printf("<div class='draggable-name'>%s - P%d<a class='del_kanban' onclick='javascript: return confirmDelete();' href='user.php?action=del_kanban&kid=%d'>&ndash;</a></div>", traiteStringFromBDD($record->nom), intval($record->priority), $id);
+	printf("<div id='task%d' class='draggable'>", $record->id);
+	printf("<div class='draggable-name'>%s - P%d<div id='deltask%d' class='del_kanban'>&ndash;</div></div>", traiteStringFromBDD($record->nom), intval($record->priority), $id);
 	printf("<p class='kanban_description'>%s</p>", traiteStringFromBDD($record->description));
 	$interval = date_diff(date_create($record->datefin), date_create($today));
 	if ($interval->invert) {
@@ -517,6 +518,25 @@ function displayKanbanTask($id) {
 	}
 	printf("<p class='kanban_date %s'>du %s au %s (%s)</p>", $class, displayVeryShortDate($record->datedebut), displayVeryShortDate($record->datefin), computeDuration($record->datedebut, $record->datefin));
 	printf("</div>");
+	printf("<script nonce='%s'>document.getElementById('task%d').addEventListener('dblclick', function() {displayModifyModal(\"%s\");});</script>\n", $_SESSION['nonce'], $record->id, $data);
+	printf("<script nonce='%s'>document.getElementById('deltask%d').addEventListener('click', function() {displayDelModal(\"%d\");});</script>\n", $_SESSION['nonce'], $id, $id);
+}
+
+
+function delKanban() {
+	printf("<div id='del_kanban_form' class='modal'>");
+	printf("<div class='modal_content'>");
+	if (isset($_SESSION['token'])) { unset($_SESSION['token']); }
+	$_SESSION['token'] = generateToken();
+	printf("<form method='post' id='del_kanban' action='user.php?action=del_kanban'>\n");
+	printf("<fieldset>\n<legend>Voulez-vous supprimer la tâche?</legend>\n");
+	printf("<input type='hidden' name='delid' id='delid' value='0' />\n");
+	printf("<table><tr><td>\n");
+	printf("<input type='submit' value='Oui' />\n");
+	printf("<a class='valid' href='%s?action=kanban_rm_token'>Non</a>\n", $_SESSION['curr_script']);
+	printf("</td></tr>\n</table>\n</fieldset>\n");
+	printf("</form>\n");
+	printf("</div></div>");
 }
 
 
@@ -538,7 +558,7 @@ function addKanban() {
 	}
 	printf("</select>\n</td>");
 	printf("</tr>\n</table>\n</fieldset>\n");
-	validForms('Enregistrer', 'user.php');
+	validForms('Enregistrer', 'kanban');
 	printf("</form>\n");
 	printf("</div></div>");
 }
@@ -563,7 +583,7 @@ function modifyKanban() {
 	}
 	printf("</select>\n</td>");
 	printf("</tr>\n</table>\n</fieldset>\n");
-	validForms('Enregistrer', 'user.php');
+	validForms('Enregistrer', 'kanban');
 	printf("</form>\n");
 	printf("</div></div>");
 }
@@ -578,7 +598,7 @@ function displayKanban() {
 		printf("<div id='%s' class='dropper %s'>\n", traiteStringFromBDD($row->nom), $row->drop_color);
 		if (intval($row->id) == 1) {
 			printf("<div class='kanban_title %s'>%s", $row->drag_color, traiteStringFromBDD($row->affichage));
-			printf("<a class='add_kanban' onclick='displayAddModal();'>+</a></div>");
+			printf("<a id='addkanban' class='add_kanban'>+</a></div>");
 		} else if (intval($row->id) == 3) {
 			$req_kanban = sprintf("SELECT * FROM kanban WHERE progress='%d' AND user='%d'", $row->id, $_SESSION['uid']);
 			$res_kanban = mysqli_query($base, $req_kanban);
@@ -597,7 +617,9 @@ function displayKanban() {
 	dbDisconnect($base);
 	addKanban();
 	modifyKanban();
-	printf("<script src='js/dragdrop.js'></script>");
+	delKanban();
+	printf("<script nonce='%s' src='js/dragdrop.js'></script>\n", $_SESSION['nonce']);
+	printf("<script nonce='%s'>document.getElementById('addkanban').addEventListener('click', function() {displayAddModal();});</script>\n", $_SESSION['nonce']);
 }
 
 
@@ -629,7 +651,7 @@ function recordKanban($action) {
 			$request = sprintf("UPDATE kanban SET nom='%s', description='%s', datefin='%s', priority='%d' WHERE id='%d'", $nom, $description, $datefin, $priority, $id);
 			break;
 		case 'delete':
-			$request = sprintf("DELETE FROM kanban WHERE id='%d'", $_GET['kid']);
+			$request = sprintf("DELETE FROM kanban WHERE id='%d'", $_POST['delid']);
 			break;
 	}
 	if (isset($_SESSION['token'])) {
@@ -648,7 +670,7 @@ function recordKanban($action) {
 
 
 function displayGantts() {
-	printf("<script>window.onload = function() { loadGantt(); }</script>");
+	printf("<script nonce='%s'>document.body.addEventListener('load', loadGantt());</script>", $_SESSION['nonce']);
 	printf("<div class='project'>\n");
 	printf("<div id='ganttGraph'></div>\n");
 	printf("</div>\n");
