@@ -24,66 +24,47 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
 // --------------------
-// Définition des variables de base
-// Nom de la machine hébergeant le serveur MySQL
-$servername = 'localhost';
-// Nom de la base de données
-$dbname = 'schedio';
-// Nom de l'utilisateur autorisé à se connecter sur la BDD
-$login = 'web';
-// Mot de passe de connexion
-$passwd = 'webphpsql';
-// Titre de l'application
-$appli_titre = ("Schedio - Gestion de projet");
-$appli_titre_short = ("Schedio");
-// Thème CSS
-$cssTheme = 'beige'; // glp, beige, blue
-// Image accueil
-$auhtPict = 'pict/accueil.png';
-// Mode captcha
-$captchaMode = 'num'; // 'txt' or 'num'
-// --------------------
-
-
-
-
-// --------------------
 // Définition des variables internes à l'application
 // Ne pas modifier ces variables !
 date_default_timezone_set('Europe/Paris');
 setlocale(LC_ALL, 'fr_FR.utf8');
-ini_set('error_reporting', -1);
-ini_set('display_error', 1);
+ini_set('error_reporting', E_ALL);
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+ini_set('xdebug.var_display_max_depth', 8);
+ini_set('xdebug.var_display_max_children ', 3);
+ini_set('session.gc_maxlifetime', 86400); // 24h00
+ini_set('session.gc_probability', 1);
 ini_set('session.name', '__SECURE-PHPSESSID');
-ini_set('session.cookie_samesite', 'Strict');
 ini_set('session.use_trans_sid', 0);
-ini_set('session.cookie_secure', 1);
 ini_set('session.use_strict_mode', 1);
-ini_set('session.cache_limiter', 'nocache');
-ini_set('session.cookie_samesite', 'Strict');
-ini_set('session.cookie_lifetime', 0);
 ini_set('session.use_cookies', 1);
 ini_set('session.use_only_cookies', 1);
-ini_set('session.gc_probability', 1);
-ini_set('session.gc_maxlifetime', 1800); // 30 min
+ini_set('session.cache_limiter', 'nocache');
 ini_set('session.sid_length', 48);
 ini_set('session.sid_bits_per_character', 6);
-ini_set('session.cookie_httponly', 1);
 ini_set('session.entropy_length', 32);
 ini_set('session.entropy_file', '/dev/urandom');
 ini_set('session.hash_function', 'sha256');
 ini_set('filter.default', 'full_special_chars');
 ini_set('filter.default_flags', 0);
 
+$configs = include('config.php');
+
+$servername = $configs['servername'];
+$dbname = $configs['dbname'];
+$login = $configs['login'];
+$passwd = $configs['passwd'];
+$appli_titre = $configs['appli_titre'];
+$appli_titre_short = $configs['appli_titre_short'];
+$cssTheme = $configs['cssTheme'];
+$auhtPict = $configs['auhtPict'];
+$captchaMode = $configs['captchaMode'];
+$sessionDuration = $configs['sessionDuration'];
+
 $cspReport = "csp_parser.php";
 $server_path = dirname($_SERVER['SCRIPT_FILENAME']);
 $cheminMD = sprintf("%s/data/", $server_path);
-
-$cookie_timeout = 3600;
-$cookie_domain = "";
-$session_secure = true;
-$cookie_httponly = true;
-$cookie_samesite = "Strict";
 // --------------------
 
 
@@ -140,6 +121,33 @@ function dbDisconnect($dbh) {
 }
 
 
+function base64UrlEncode($data) {
+	$b64 = base64_encode($data);
+	$url = strtr($b64, '+/', '-_');
+	return rtrim($url, '=');
+}
+
+
+function base64UrlDecode($data) {
+	$b64 = strtr($data, '-_', '+/');
+	$end = str_repeat('=', 3 - (3 + strlen($data)) % 4);
+	return base64_decode($b64.$end);
+}
+
+
+function startSession() {
+	session_set_cookie_params([
+		'lifetime' => 0,
+		'path' => '/',
+		'domain' => "",
+		'secure' => true,
+		'httponly' => true,
+		'samesite' => "Strict"
+	]);
+	session_start();
+}
+
+
 function destroySession() {
 	genSyslog(__FUNCTION__);
 	session_unset();
@@ -152,6 +160,16 @@ function destroySession() {
 
 function isSessionValid($role) {
 	genSyslog(__FUNCTION__);
+	$now = time();
+	if ($now > $_SESSION['expire']) {
+		destroySession();
+		exit();
+	} else {
+		if ($_SESSION['expire'] - $now <= 1800) {
+			// Il reste moins d'une demi-heure
+			$_SESSION['expire'] += 1800;
+		}
+	}
 	if (!isset($_SESSION['uid']) OR (!in_array($_SESSION['role'], $role))) {
 		destroySession();
 		exit();
@@ -159,13 +177,23 @@ function isSessionValid($role) {
 }
 
 
+function isAuthorized($roles) {
+	genSyslog(__FUNCTION__);
+	if (!in_array($_SESSION['role'], $roles)) {
+		header("Location: ".$_SESSION['curr_script']);
+	}
+}
+
+
 function infoSession() {
+	$timeLeft = intdiv($_SESSION['expire'] - time(), 60);
 	$_SESSION['rand'] = genNonce(16);
 	$infoDay = sprintf("%s - %s", $_SESSION['day'], $_SESSION['hour']);
 	$infoNav = sprintf("%s - %s - %s", $_SESSION['os'], $_SESSION['browser'], $_SESSION['ipaddr']);
-	$infoUser = sprintf("Connecté en tant que <b>%s %s</b>", $_SESSION['prenom'], $_SESSION['nom']);
+	$infoUser = sprintf("Connecté en tant que <b>%s %s</b> (%s)", $_SESSION['prenom'], $_SESSION['nom'], getRole($_SESSION['role']));
+	$infoSession = sprintf("%s minutes restantes", $timeLeft);
 	$logoff = sprintf("<a href='schedio.php?rand=%s&action=disconnect'>Déconnexion&nbsp;<img alt='logoff' src='pict/turnoff.png' width='10'></a>", $_SESSION['rand']);
-	return sprintf("Powered by σχέδιο - %s - %s - %s - %s", $infoDay, $infoNav, $infoUser, $logoff);
+	return sprintf("Powered by σχέδιο - %s - %s - %s - %s - %s", $infoDay, $infoNav, $infoUser, $infoSession, $logoff);
 }
 
 
@@ -242,14 +270,6 @@ function detectOS() {
 }
 
 
-function set_var_utf8() {
-	ini_set('mbstring.internal_encoding', 'UTF-8');
-	ini_set('mbstring.http_input', 'UTF-8');
-	ini_set('mbstring.http_output', 'UTF-8');
-	ini_set('mbstring.detect_order', 'auto');
-}
-
-
 function genNonce($length) {
 	$nonce = random_bytes($length);
 	$b64 = base64_encode($nonce);
@@ -280,19 +300,30 @@ function genCspPolicy() {
 function genSyslog($caller, $msg='') {
 	global $progVersion;
 	$log = array();
-	$log[] = array('program' => 'schedio', 'version' => $progVersion);
-	$log[] = array('function' => $caller);
+	$log['program'] = 'schedio';
+	$log['version'] = $progVersion;
+	if (isset($_SESSION['os'])) {
+		$log['os'] = $_SESSION['os'];
+	}
+	if (isset($_SESSION['ipaddr'])) {
+		$log['ipaddr'] = $_SESSION['ipaddr'];
+	}
+	if (isset($_SESSION['browser'])) {
+		$log['browser'] = $_SESSION['browser'];
+	}
+	$log['file'] = basename($_SERVER['PHP_SELF']);
+	$log['function'] = $caller;
 	if (isset($_SESSION['login'])) {
-		$log[] = array('login' => $_SESSION['login']);
+		$log['login'] = $_SESSION['login'];
 	}
 	if (isset($_SESSION['id_etab'])) {
-		$log[] = array('etablissement' => $_SESSION['id_etab']);
+		$log['etablissement'] = $_SESSION['id_etab'];
 	}
 	if (isset($_SESSION['quiz'])) {
-		$log[] = array('quiz' => $_SESSION['quiz']);
+		$log['quiz'] = $_SESSION['quiz'];
 	}
 	if (!empty($msg)) {
-		$log[] = array('message' => $msg);
+		$log['message'] = $msg;
 	}
 	openlog("schedio", LOG_PID, LOG_SYSLOG);
 	syslog(LOG_INFO, json_encode($log));
@@ -304,7 +335,6 @@ function headPage($titre, $sousTitre=''){
 	genSyslog(__FUNCTION__);
 	$cspPolicy = genCspPolicy();
 	$nonce = $_SESSION['nonce'];
-	set_var_utf8();
 	header("cache-control: no-cache, must-revalidate");
 	header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");
 	header("Content-type: text/html; charset=utf-8");
@@ -443,6 +473,27 @@ function generateToken() {
 	return $token;
 }
 
+function getCredentialFromDb() {
+	$base = dbConnect();
+	$request = sprintf("SELECT credential_id, public_key, sign_count FROM users WHERE login='%s' LIMIT 1", $_SESSION['login']);
+	$result = mysqli_query($base, $request);
+	$row = mysqli_fetch_object($result);
+	dbDisconnect($base);
+	if (isset($row->credential_id)) {
+		$_SESSION['registration']['credentialId'] = $row->credential_id;
+		$_SESSION['registration']['credentialPublicKeyPEM'] = $row->public_key;
+		$_SESSION['registration']['signCount'] = $row->sign_count;
+	}
+	return($result);
+}
+
+
+function registerWebauthnCred() {
+	printf("<div class='msg'><div><img id='registerImg' src='pict/fido2key.png' alt='info'></div><div><p id='registerMsg'></p></div></div>");
+	printf("<div class='none' id='pubKey'><div><img src='pict/public_key.png' alt='pubkey'></div><div id='msgPubKey'></div></div>");
+	printf("<script nonce='%s'>document.body.addEventListener('load', newRegistration());</script>", $_SESSION['nonce']);
+}
+
 
 function changePassword() {
 	genSyslog(__FUNCTION__);
@@ -457,9 +508,9 @@ function changePassword() {
 		printf("<form method='post' id='chg_password' action='%s?action=chg_password'>\n", $script);
 		printf("<fieldset>\n<legend>Changement de mot de passe</legend>\n");
 		printf("<table>\n<tr><td>\n");
-		printf("<input type='password' size='50' maxlength='50' name='new1' id='new1' placeholder='Nouveau mot de passe' autocomplete='new-password' required />\n");
+		printf("<input type='password' size='30' maxlength='30' name='new1' id='new1' placeholder='Nouveau mot de passe' autocomplete='new-password' required />\n");
 		printf("</td></tr>\n<tr><td>\n");
-		printf("<input type='password' size='50' maxlength='50' name='new2' id='new2' placeholder='Saisissez à nouveau le mot de passe' autocomplete='new-password' required/>\n");
+		printf("<input type='password' size='30' maxlength='30' name='new2' id='new2' placeholder='Saisissez à nouveau le mot de passe' autocomplete='new-password' required/>\n");
 		printf("</td></tr>\n</table>\n");
 		printf("</fieldset>\n");
 		validForms('Enregistrer', $script);
