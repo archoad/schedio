@@ -84,6 +84,7 @@ p, ul, ol {
 	font-size:8pt;
 	margin-left:0px;
 	padding-left:14px;
+	white-space:pre-line;
 }
 
 a {
@@ -149,6 +150,10 @@ input:valid,
 select:valid,
 textarea:valid {
 	border-color: var(--bg1Color);
+}
+
+::placeholder {
+	font-style: italic;
 }
 
 table {
@@ -288,6 +293,29 @@ textarea {
 	width: 60%;
 	margin-left: auto;
 	margin-right: auto;
+}
+
+.onecolumn dl {
+	background-color: var(--bg2Color);
+	padding: 10px;
+}
+
+.onecolumn dt {
+	background-color: var(--myRedLight);
+	color: var(--textClearColor);
+	margin: 5px 0px 0px 0px;
+	padding: 5px;
+	font-weight: bold;
+	font-size: 10pt;
+}
+
+.onecolumn dd {
+	background-color: var(--myOrangeLight);
+	color: var(--textDarkColor);
+	margin: 0px 0px 5px 0px;
+	padding: 5px 5px 5px 50px;
+	font-weight: bold;
+	font-size: 10pt;
 }
 
 .foot {
@@ -652,6 +680,11 @@ textarea {
 .event dd {
 	color: var(--textDarkColor);
 	padding: 0 0 4px 0;
+}
+
+.sticky {
+	position: sticky;
+	top: 20px;
 }
 
 .btn_suppr {
@@ -1114,7 +1147,7 @@ textarea {
 }
 
 .drop_hover {
-	border-width: 2px;
+	box-shadow: var(--shadowHover);
 }
 
 .draggable {
@@ -1125,6 +1158,7 @@ textarea {
 	border-radius: 5px;
 	transition: all 200ms linear;
 	user-select: none;
+	cursor: move;
 }
 
 .draggable-name {
