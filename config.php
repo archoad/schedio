@@ -38,6 +38,8 @@ $cssTheme = 'green'; // glp, beige, blue, green
 $auhtPict = 'pict/accueil.png';
 // Mode captcha
 $captchaMode = 'num'; // 'txt' or 'num'
+// Webauthn attestation mode
+$attestationMode = 'direct'; // 'none' or 'indirect' or 'direct'
 // Session length
 $sessionDuration = 3600; // 60 minutes
 
@@ -53,6 +55,7 @@ return array(
 	'cssTheme' => $cssTheme,
 	'auhtPict' => $auhtPict,
 	'captchaMode' => $captchaMode,
+	'attestationMode' => $attestationMode,
 	'sessionDuration' => $sessionDuration
 );
 

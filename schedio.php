@@ -20,6 +20,9 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 =========================================================*/
 
+
+
+
 include("functions.php");
 startSession();
 
@@ -41,7 +44,7 @@ function headPageAuth() {
 	printf("<link rel='icon' type='image/png' href='pict/favicon.png' />\n");
 	printf("<link nonce='%s' href='styles/style.%s.css' rel='StyleSheet' type='text/css' media='all' />\n", $_SESSION['nonce'], $_SESSION['theme']);
 	printf("<link nonce='%s' href='styles/style.base.css' rel='StyleSheet' type='text/css' media='all' />\n", $_SESSION['nonce']);
-	printf("<script nonce='%s' src='js/schedio.js'></script>\n", $_SESSION['nonce']);
+	printf("<script nonce='%s' src='js/mfa.js'></script>", $_SESSION['nonce']);
 	printf("<title>Authentification</title>\n");
 	printf("</head>\n<body>\n");
 }
@@ -130,7 +133,7 @@ function authentification($password) {
 
 function initiateSession($data) {
 	genSyslog(__FUNCTION__);
-	global $cssTheme, $captchaMode;
+	global $cssTheme, $captchaMode, $sessionDuration;
 	session_regenerate_id();
 	date_default_timezone_set('Europe/Paris');
 	$date = getdate();

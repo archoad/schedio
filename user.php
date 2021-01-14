@@ -72,6 +72,11 @@ if (isset($_GET['action'])) {
 		footPage($_SESSION['curr_script'], "Accueil");
 		break;
 
+	case 'authentication':
+		menuAuthentication();
+		footPage($_SESSION['curr_script'], "Accueil");
+		break;
+
 	case 'password':
 		changePassword();
 		footPage();
@@ -83,6 +88,11 @@ if (isset($_GET['action'])) {
 		} else {
 			linkMsg($_SESSION['curr_script'], "Erreur de changement de mot de passe", "alert.png");
 		}
+		footPage();
+		break;
+
+	case 'regwebauthn':
+		registerWebauthnCred();
 		footPage();
 		break;
 

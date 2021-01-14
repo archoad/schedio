@@ -60,6 +60,7 @@ $appli_titre_short = $configs['appli_titre_short'];
 $cssTheme = $configs['cssTheme'];
 $auhtPict = $configs['auhtPict'];
 $captchaMode = $configs['captchaMode'];
+$attestationMode = $configs['attestationMode'];
 $sessionDuration = $configs['sessionDuration'];
 
 $cspReport = "csp_parser.php";
@@ -77,7 +78,7 @@ function menuAdmin() {
 	linkMsg("admin.php?action=modif_user", "Modifier un utilisateur", "modif_user.png", 'menu');
 	printf("</div>\n<div class='column right'>\n");
 	linkMsg("admin.php?action=maintenance", "Maintenance de la Base de Données", "bdd.png", 'menu');
-	linkMsg("admin.php?action=password", "Changer de mot de passe", "cadenas.png", 'menu');
+	linkMsg("admin.php?action=authentication", "Gestion de l'authentification", "fingerprint.png", 'menu');
 	printf("</div>\n</div>");
 }
 
@@ -89,7 +90,7 @@ function menuUser() {
 	printf("<div class='column left'>\n");
 	linkMsg("user.php?action=project_mgmt", "Gestion de projet", "project_mgmt.png", 'menu');
 	linkMsg("user.php?action=kanban", "Gestion du temps (Kanban)", "kanban.png", 'menu');
-	linkMsg("user.php?action=password", "Changer de mot de passe", "cadenas.png", 'menu');
+	linkMsg("user.php?action=authentication", "Gestion de l'authentification", "fingerprint.png", 'menu');
 	printf("</div>\n<div class='column right'>\n");
 	linkMsg("user.php?action=gantt", "Diagramme de Gantt", "gantt.png", 'menu');
 	if ($_SESSION['role']==='2') {
@@ -97,7 +98,16 @@ function menuUser() {
 		linkMsg("user.php?action=modif_project", "Modifier un projet", "modif_project.png", 'menu');
 	}
 	printf("</div>\n</div>");
+}
 
+
+function menuAuthentication() {
+	printf("<div class='row'>");
+	printf("<div class='column left'>");
+	linkMsg($_SESSION['curr_script']."?action=password", "Changer de mot de passe", "cadenas.png", 'menu');
+	printf("</div><div class='column right'>");
+	linkMsg($_SESSION['curr_script']."?action=regwebauthn", "Enregistrer une clef d'authentification", "fido2key.png", 'menu');
+	printf("</div></div>");
 }
 
 
@@ -352,6 +362,7 @@ function headPage($titre, $sousTitre=''){
 	printf("<script nonce='%s' src='js/schedio.js'></script>\n", $nonce);
 	if (isset($_SESSION['curr_script'])) {
 		$script = $_SESSION['curr_script'];
+		printf("<script nonce='%s' src='js/mfa.js'></script>", $nonce);
 		if ($script === 'user.php') {
 			printf("<script nonce='%s' src='js/graphs.js'></script>\n", $nonce);
 			printf("<link nonce='%s' href='js/vis-timeline-graph2d.min.css' rel='stylesheet' type='text/css' media='all' />\n", $nonce);

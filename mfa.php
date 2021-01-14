@@ -1,7 +1,7 @@
 <?php
 /*=========================================================
 // File:		mfa.php
-// Description: multi factor authentication process of EvalSMSI
+// Description: multi factor authentication process of Schedio
 // Created:	 2009-01-01
 // Licence:	 GPL-3.0-or-later
 // Copyright 2009-2019 Michel Dubois
@@ -24,7 +24,7 @@ include("functions.php");
 include("data/cbor/ByteBuffer.php");
 include("data/cbor/CborDecoder.php");
 startSession();
-$authorizedRole = array('1', '2', '3', '4', '5', '100');
+$authorizedRole = array('1', '2', '3', '4', '100');
 isSessionValid($authorizedRole);
 
 
@@ -169,7 +169,7 @@ function generatePKCCOregistration() {
 		'id' => base64_encode(random_bytes(16)),
 	];
 	$extensions = [
-		'txAuthSimple' => "Authentification EvalSMSI",
+		'txAuthSimple' => "Authentification Schedio",
 		'loc' => true,
 		'uvi'=> true,
 	];

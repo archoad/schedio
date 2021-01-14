@@ -39,9 +39,9 @@ function addReturnMessage() {
 function displayResultButton(rand) {
 	let mylink = document.getElementById('endAuthLink');
 	if (rand) {
-		mylink.href = "evalsmsi.php?rand="+rand+"&action=connect";
+		mylink.href = "schedio.php?rand="+rand+"&action=connect";
 	} else {
-		mylink.href = "evalsmsi.php";
+		mylink.href = "schedio.php";
 	}
 	mylink.classList.add('block');
 	mylink.classList.remove('none');
