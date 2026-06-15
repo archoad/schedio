@@ -22,6 +22,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 include "functions.php";
 startSession();
+if (!isset($_SESSION["captchaMode"])) {
+	global $captchaMode;
+	$_SESSION["captchaMode"] = $captchaMode ?? "num";
+}
+
 if (isset($_SESSION["sess_captcha"])) {
 	unset($_SESSION["sess_captcha"]);
 }
@@ -75,12 +80,15 @@ function numCaptcha($image)
 }
 
 header("Content-Type: image/png");
+header("X-Content-Type-Options: nosniff");
+header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
 $img = imagecreatetruecolor($imgWidth, $imgHeight);
 $bg = imagecolorallocate($img, 0, 0, 0);
 imagecolortransparent($img, $bg);
 generateLines($img, 5);
+$mode = $_SESSION["captchaMode"] ?? "num";
 
-switch ($_SESSION["captchaMode"]) {
+switch ($mode) {
 	case "txt":
 		txtCaptcha($img);
 		break;
@@ -94,4 +102,4 @@ switch ($_SESSION["captchaMode"]) {
 
 imagepng($img);
 imagedestroy($img);
-?>
+exit;
