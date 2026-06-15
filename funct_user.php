@@ -21,6 +21,124 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 =========================================================*/
 
 
+function denyAccess($back = "user.php") {
+	http_response_code(403);
+	linkMsg($back, "Accès non autorisé", "alert.png");
+	footPage();
+	exit();
+}
+
+
+function getProjectRecord($projectId) {
+	$base = dbConnect();
+	$request = sprintf("SELECT * FROM project WHERE id='%d' LIMIT 1", intval($projectId));
+	$result = mysqli_query($base, $request);
+	$record = mysqli_fetch_object($result);
+	dbDisconnect($base);
+	return $record ?: null;
+}
+
+
+function getTaskRecord($taskId) {
+	$base = dbConnect();
+	$request = sprintf("SELECT * FROM task WHERE id='%d' LIMIT 1", intval($taskId));
+	$result = mysqli_query($base, $request);
+	$record = mysqli_fetch_object($result);
+	dbDisconnect($base);
+	return $record ?: null;
+}
+
+
+function getKanbanRecord($kanbanId) {
+	$base = dbConnect();
+	$request = sprintf("SELECT * FROM kanban WHERE id='%d' LIMIT 1", intval($kanbanId));
+	$result = mysqli_query($base, $request);
+	$record = mysqli_fetch_object($result);
+	dbDisconnect($base);
+	return $record ?: null;
+}
+
+
+function canViewProject($projectId) {
+	$project = getProjectRecord($projectId);
+	if (!$project) { return false; }
+
+	$uid = intval($_SESSION["uid"]);
+	$role = intval($_SESSION["role"]);
+
+	switch ($role) {
+		case 2:
+			return intval($project->directeur) === $uid;
+		case 3:
+			return intval($project->chef) === $uid;
+		case 4:
+			return true;
+		default:
+			return false;
+	}
+}
+
+
+function canEditProject($projectId) {
+	$project = getProjectRecord($projectId);
+	if (!$project) { return false; }
+	return (
+		intval($_SESSION["role"]) === 2 &&
+		intval($project->directeur) === intval($_SESSION["uid"]) &&
+		!intval($project->complete)
+	);
+}
+
+
+function canCloseProject($projectId) {
+	$project = getProjectRecord($projectId);
+	if (!$project) { return false; }
+	return (
+		intval($_SESSION["role"]) === 2 &&
+		intval($project->directeur) === intval($_SESSION["uid"]) &&
+		!intval($project->complete)
+	);
+}
+
+
+function canManageProjectTasks($projectId) {
+	$project = getProjectRecord($projectId);
+	if (!$project || intval($project->complete)) { return false; }
+
+	$uid = intval($_SESSION["uid"]);
+	$role = intval($_SESSION["role"]);
+
+	if ($role === 2) {
+		return intval($project->directeur) === $uid;
+	}
+	if ($role === 3) {
+		return intval($project->chef) === $uid;
+	}
+	return false;
+}
+
+
+function canViewTask($taskId) {
+	$task = getTaskRecord($taskId);
+	if (!$task) { return false; }
+	return canViewProject($task->projet);
+}
+
+
+function canEditTask($taskId) {
+	$task = getTaskRecord($taskId);
+	if (!$task) { return false; }
+	return canManageProjectTasks($task->projet);
+}
+
+
+function canEditKanban($kanbanId) {
+	$record = getKanbanRecord($kanbanId);
+	if (!$record) { return false; }
+	return intval($record->user) === intval($_SESSION["uid"]);
+}
+
+
 function createProject() {
 	$base = dbConnect();
 	$res_chefproj = mysqli_query($base, "SELECT * FROM users WHERE role='2' OR role='3'");
@@ -126,14 +244,18 @@ function recordProject($action) {
 	$datefin = isset($_POST['datefin']) ? $_POST['datefin'] : NULL;
 	switch ($action) {
 		case 'add':
+			if (intval($_SESSION['role']) !== 2) { return false; }
 			$request = sprintf("INSERT INTO project (nom, description, chapter, directeur, chef, datedebut, datefin) VALUES ('%s', '%s', '%d', '%d', '%d', '%s', '%s')", $nom, $description, $chapter, $directeur, $chef, $datedebut, $datefin);
 			break;
 		case 'update':
 			$id = intval($_SESSION['current_project']);
+			if (!canEditProject($id)) { return false; }
 			$request = sprintf("UPDATE project SET nom='%s', description='%s', chapter='%d', directeur='%d', chef='%d', datedebut='%s', datefin='%s' WHERE id='%d'", $nom, $description, $chapter, $directeur, $chef, $datedebut, $datefin, $id);
 			break;
 		case 'close':
-			$request = sprintf("UPDATE project SET complete='1' WHERE id='%d'", $_GET['value']);
+			$id = isset($_GET['value']) ? intval($_GET['value']) : 0;
+			if (!canCloseProject($id)) { return false; }
+			$request = sprintf("UPDATE project SET complete='1' WHERE id='%d'", $id);
 			break;
 		default:
 			return false;
@@ -355,6 +477,7 @@ function projectDetail() {
 function recordNewTask() {
 	$base = dbConnect();
 	$projet = intval($_SESSION['project']);
+	if (!canManageProjectTasks($projet)) { return false; }
 	$nom = isset($_POST['nom']) ? traiteStringToBDD($_POST['nom']) : NULL;
 	$datedebut = isset($_POST['datedebut']) ? $_POST['datedebut'] : NULL;
 	$datefin = isset($_POST['datefin']) ? $_POST['datefin'] : NULL;
@@ -377,6 +500,10 @@ function recordNewTask() {
 function incrDecrTask($action) {
 	$base = dbConnect();
 	$id = intval($_GET['value']);
+	if (!canEditTask($id)) {
+		dbDisconnect($base);
+		return false;
+	}
 	$request = sprintf("SELECT avancement FROM task WHERE id='%d' LIMIT 1", $id);
 	$result = mysqli_query($base,$request);
 	$record = mysqli_fetch_object($result);
@@ -483,6 +610,7 @@ function displayActions() {
 
 
 function recordAction() {
+	if (!isset($_SESSION['task']) || !canEditTask($_SESSION['task'])) { return false; }
 	$fileName = getActionFilename();
 	if ($handle = fopen($fileName, "w")) {
 		fwrite($handle, $_POST['description']);
@@ -638,13 +766,22 @@ function recordKanban($action) {
 			$request = sprintf("INSERT INTO kanban (user, progress, nom, description, datedebut, datefin, priority) VALUES ('%d', '%d', '%s', '%s', '%s', '%s', '%d')", $user, $progress, $nom, $description, $datedebut, $datefin, $priority);
 			break;
 		case 'update':
+			$id = isset($_GET['task']) ? intval($_GET['task']) : 0;
+			if (!canEditKanban($id)) {
+				dbDisconnect($base);
+				return false;
+			}
 			$request = sprintf("SELECT id FROM progress WHERE nom='%s' LIMIT 1", $_GET['progress']);
 			$result = mysqli_query($base, $request);
 			$record = mysqli_fetch_object($result);
-			$request = sprintf("UPDATE kanban SET progress='%d' WHERE id='%d'", $record->id, $_GET['task']);
+			$request = sprintf("UPDATE kanban SET progress='%d' WHERE id='%d'", $record->id, $id);
 			break;
 		case 'modify':
-			$id = isset($_POST['uid']) ? intval($_POST['uid']) : NULL;
+			$id = isset($_POST['uid']) ? intval($_POST['uid']) : 0;
+			if (!canEditKanban($id)) {
+				dbDisconnect($base);
+				return false;
+			}
 			$nom = isset($_POST['unom']) ? traiteStringToBDD($_POST['unom']) : NULL;
 			$description = isset($_POST['udescription']) ? traiteStringToBDD($_POST['udescription']) : NULL;
 			$datefin = isset($_POST['udatefin']) ? $_POST['udatefin'] : NULL;
@@ -652,7 +789,12 @@ function recordKanban($action) {
 			$request = sprintf("UPDATE kanban SET nom='%s', description='%s', datefin='%s', priority='%d' WHERE id='%d'", $nom, $description, $datefin, $priority, $id);
 			break;
 		case 'delete':
-			$request = sprintf("DELETE FROM kanban WHERE id='%d'", $_POST['delid']);
+			$id = isset($_POST['delid']) ? intval($_POST['delid']) : 0;
+			if (!canEditKanban($id)) {
+				dbDisconnect($base);
+				return false;
+			}
+			$request = sprintf("DELETE FROM kanban WHERE id='%d'", $id);
 			break;
 	}
 	if (isset($_SESSION['token'])) {

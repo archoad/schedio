@@ -38,11 +38,17 @@ headPage(
 if (isset($_GET["action"])) {
 	switch ($_GET["action"]) {
 		case "new_project":
+			if (intval($_SESSION["role"]) !== 2) {
+				denyAccess($_SESSION["curr_script"]);
+			}
 			createProject();
 			footPage();
 			break;
 
 		case "record_project":
+			if (intval($_SESSION["role"]) !== 2) {
+				denyAccess($_SESSION["curr_script"]);
+			}
 			if (recordProject("add")) {
 				linkMsg(
 					$_SESSION["curr_script"],
@@ -60,9 +66,16 @@ if (isset($_GET["action"])) {
 			break;
 
 		case "modif_project":
+			if (intval($_SESSION["role"]) !== 2) {
+				denyAccess($_SESSION["curr_script"]);
+			}
 			if (empty($_POST["project"])) {
 				selectProjectModif();
 			} else {
+				$projectId = intval($_POST["project"]);
+				if (!canEditProject($projectId)) {
+					denyAccess($_SESSION["curr_script"]);
+				}
 				$_SESSION["current_project"] = $_POST["project"];
 				modifProject();
 			}
@@ -70,6 +83,9 @@ if (isset($_GET["action"])) {
 			break;
 
 		case "update_project":
+			if ( !isset($_SESSION["current_project"]) || !canEditProject($_SESSION["current_project"])) {
+				denyAccess($_SESSION["curr_script"]);
+			}
 			if (recordProject("update")) {
 				linkMsg(
 					$_SESSION["curr_script"],
@@ -124,98 +140,68 @@ if (isset($_GET["action"])) {
 			break;
 
 		case "record_task":
+			if (!isset($_SESSION["project"]) || !canManageProjectTasks($_SESSION["project"])) {
+				denyAccess($_SESSION["curr_script"] . "?action=project_mgmt");
+			}
 			if (recordNewTask()) {
-				header(
-					"Location: " .
-						$_SESSION["curr_script"] .
-						"?action=mgmt&value=" .
-						$_SESSION["project"],
-				);
+				header("Location: " .$_SESSION["curr_script"] ."?action=mgmt&value=" .$_SESSION["project"]);
 			} else {
-				linkMsg(
-					$_SESSION["curr_script"],
-					"Erreur d'enregistrement",
-					"alert.png",
-				);
+				linkMsg($_SESSION["curr_script"], "Erreur d'enregistrement", "alert.png");
 				footPage();
 			}
 			break;
 
 		case "task_increase":
+			if (!isset($_GET["value"]) || !canEditTask($_GET["value"])) {
+				denyAccess($_SESSION["curr_script"] . "?action=project_mgmt");
+			}
 			if (incrDecrTask("increase")) {
-				header(
-					"Location: " .
-						$_SESSION["curr_script"] .
-						"?action=mgmt&value=" .
-						$_SESSION["project"],
-				);
+				header("Location: " .$_SESSION["curr_script"] ."?action=mgmt&value=" .$_SESSION["project"]);
 			} else {
-				linkMsg(
-					$_SESSION["curr_script"],
-					"Erreur d'enregistrement",
-					"alert.png",
-				);
+				linkMsg($_SESSION["curr_script"], "Erreur d'enregistrement", "alert.png");
 				footPage();
 			}
 			break;
 
 		case "task_decrease":
+			if (!isset($_GET["value"]) || !canEditTask($_GET["value"])) {
+				denyAccess($_SESSION["curr_script"] . "?action=project_mgmt");
+			}
 			if (incrDecrTask("decrease")) {
-				header(
-					"Location: " .
-						$_SESSION["curr_script"] .
-						"?action=mgmt&value=" .
-						$_SESSION["project"],
-				);
+				header("Location: " .$_SESSION["curr_script"] ."?action=mgmt&value=" .$_SESSION["project"]);
 			} else {
-				linkMsg(
-					$_SESSION["curr_script"],
-					"Erreur d'enregistrement",
-					"alert.png",
-				);
+				linkMsg($_SESSION["curr_script"], "Erreur d'enregistrement", "alert.png");
 				footPage();
 			}
 			break;
 
 		case "actions":
-			if (isset($_GET["value"])) {
-				$_SESSION["task"] = intval($_GET["value"]);
-				taskDetail();
-				footPage(
-					$_SESSION["curr_script"] .
-						"?action=mgmt&value=" .
-						$_SESSION["project"],
-					"Accueil",
-				);
-			} else {
-				header(
-					"Location: " . $_SESSION["curr_script"] . "?action=mgmt",
-				);
+			if (!isset($_GET["value"]) || !canEditTask($_GET["value"])) {
+				denyAccess($_SESSION["curr_script"] . "?action=project_mgmt");
 			}
+			$_SESSION["task"] = intval($_GET["value"]);
+			taskDetail();
+			footPage($_SESSION["curr_script"] ."?action=mgmt&value=" .$_SESSION["project"], "Accueil");
 			break;
 
 		case "read_actions":
-			if (isset($_GET["value"])) {
-				$_SESSION["task"] = intval($_GET["value"]);
-				taskDetail();
-				footPage(
-					$_SESSION["curr_script"] .
-						"?action=mgmt&value=" .
-						$_SESSION["project"],
-					"Accueil",
-				);
-			} else {
-				header(
-					"Location: " . $_SESSION["curr_script"] . "?action=mgmt",
-				);
+			if (!isset($_GET["value"]) || !canViewTask($_GET["value"])) {
+				denyAccess($_SESSION["curr_script"] . "?action=project_mgmt");
 			}
+			$_SESSION["task"] = intval($_GET["value"]);
+			taskDetail();
+			footPage($_SESSION["curr_script"] ."?action=mgmt&value=" .$_SESSION["project"], "Accueil");
 			break;
 
 		case "mgmt":
 			if (isset($_GET["value"])) {
-				$_SESSION["project"] = intval($_GET["value"]);
-				$referer = explode("=", $_SERVER["HTTP_REFERER"])[1];
-				if ($referer == "gantt") {
+				$projectId = intval($_GET["value"]);
+				if (!canViewProject($projectId)) {
+					denyAccess($_SESSION["curr_script"] . "?action=project_mgmt");
+				}
+				$_SESSION["project"] = $projectId;
+				$referer = $_SERVER["HTTP_REFERER"] ?? "";
+				if (str_contains($referer, "action=gantt")) {
 					displayProjectHead();
 					footPage(
 						$_SESSION["curr_script"] . "?action=gantt",
@@ -238,44 +224,30 @@ if (isset($_GET["action"])) {
 			break;
 
 		case "complete":
-			if (isset($_GET["value"])) {
-				if (recordProject("close")) {
-					header(
-						"Location: " .
-							$_SESSION["curr_script"] .
-							"?action=project_mgmt",
-					);
-				} else {
-					linkMsg(
-						$_SESSION["curr_script"],
-						"Erreur d'enregistrement",
-						"alert.png",
-					);
-					footPage();
-				}
+			if (!isset($_GET["value"])) {
+				header("Location: " .$_SESSION["curr_script"] ."?action=project_mgmt");
+				break;
+			}
+			$projectId = intval($_GET["value"]);
+			if (!canCloseProject($projectId)) {
+				denyAccess($_SESSION["curr_script"] . "?action=project_mgmt");
+			}
+			if (recordProject("close")) {
+				header("Location: " .$_SESSION["curr_script"] ."?action=project_mgmt");
 			} else {
-				header(
-					"Location: " .
-						$_SESSION["curr_script"] .
-						"?action=project_mgmt",
-				);
+				linkMsg($_SESSION["curr_script"], "Erreur d'enregistrement", "alert.png");
+				footPage();
 			}
 			break;
 
 		case "record_action":
+			if (!isset($_SESSION["task"]) || !canEditTask($_SESSION["task"])) {
+				denyAccess($_SESSION["curr_script"] . "?action=project_mgmt");
+			}
 			if (recordAction()) {
-				header(
-					"Location: " .
-						$_SESSION["curr_script"] .
-						"?action=mgmt&value=" .
-						$_SESSION["project"],
-				);
+				header("Location: " .$_SESSION["curr_script"] ."?action=mgmt&value=" .$_SESSION["project"]);
 			} else {
-				linkMsg(
-					$_SESSION["curr_script"],
-					"Erreur d'enregistrement",
-					"alert.png",
-				);
+				linkMsg($_SESSION["curr_script"], "Erreur d'enregistrement", "alert.png");
 				footPage();
 			}
 			break;
