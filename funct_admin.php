@@ -145,9 +145,7 @@ function recordUser($action) {
 	$nom = isset($_POST['nom']) ? traiteStringToBDD($_POST['nom']) : NULL;
 	$role = isset($_POST['role']) ? intval(trim($_POST['role'])) : NULL;
 	$login = isset($_POST['login']) ? traiteStringToBDD($_POST['login']) : NULL;
-	if (
-		$prenom === NULL || $nom === NULL || $role === NULL || $login === NULL || $role === 1
-	) {
+	if (empty($prenom) || empty($nom) || empty($login) || $role <= 1) {
 		return false;
 	}
 	$base = dbConnect();
@@ -157,9 +155,8 @@ function recordUser($action) {
 				dbDisconnect($base);
 				return false;
 			}
-			$passwd = traiteStringToBDD($_POST['passwd']);
 			$passwd = password_hash($passwd, PASSWORD_BCRYPT);
-			$request = sprintf("INSERT INTO users (prenom, nom, role, login, password) VALUES ('%s', '%s', '%d', '%s', '%s')", $prenom, $nom, $role, $login, $passwd);
+			$success = dbExecutePrepared($base, "INSERT INTO users (prenom, nom, role, login, password) VALUES (?, ?, ?, ?, ?)", "ssiss", $prenom, $nom, $role, $login, $passwd);
 			break;
 		case 'update':
 			if (!isset($_SESSION['current_user'])) {
@@ -167,18 +164,22 @@ function recordUser($action) {
 				return false;
 			}
 			$id = intval($_SESSION['current_user']);
-			$request = sprintf("UPDATE users SET prenom='%s', nom='%s', role='%d', login='%s' WHERE id='%d'", $prenom, $nom, $role, $login, $id);
+			if ($id <= 0) {
+				dbDisconnect($base);
+				return false;
+			}
+			$success = dbExecutePrepared($base, "UPDATE users SET prenom=?, nom=?, role=?, login=? WHERE id=? AND role<>'1'", "ssisi", $prenom, $nom, $role, $login, $id);
+			if ($success) {
+				unset($_SESSION['current_user']);
+			}
 			break;
-	}
-	if (mysqli_query($base, $request)) {
-		if ($action === 'update') {
-			unset($_SESSION['current_user']);
-		}
-		dbDisconnect($base);
-		return true;
+		default:
+			dbDisconnect($base);
+			return false;
+
 	}
 	dbDisconnect($base);
-	return false;
+	return $success;
 }
 
 

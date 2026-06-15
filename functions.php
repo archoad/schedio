@@ -150,8 +150,8 @@ function menuUser()
 	printf("</div>\n</div>");
 }
 
-function menuAuthentication()
-{
+
+function menuAuthentication() {
 	printf("<div class='row'>");
 	printf("<div class='column left'>");
 	linkMsg(
@@ -515,6 +515,75 @@ function footPage($link = "", $msg = "")
 	}
 }
 
+function dbPrepareExecute($base, $request, $types = "", ...$params)
+{
+	$stmt = mysqli_prepare($base, $request);
+	if (!$stmt) {
+		genSyslog(__FUNCTION__, mysqli_error($base));
+		return false;
+	}
+	if ($types !== "") {
+		$bindParams = [];
+		$bindParams[] = $types;
+		foreach ($params as $key => $value) {
+			$bindParams[] = &$params[$key];
+		}
+		if (!call_user_func_array([$stmt, "bind_param"], $bindParams)) {
+			genSyslog(__FUNCTION__, mysqli_stmt_error($stmt));
+			mysqli_stmt_close($stmt);
+			return false;
+		}
+	}
+	if (!mysqli_stmt_execute($stmt)) {
+		genSyslog(__FUNCTION__, mysqli_stmt_error($stmt));
+		mysqli_stmt_close($stmt);
+		return false;
+	}
+	return $stmt;
+}
+
+
+function dbExecutePrepared($base, $request, $types = "", ...$params)
+{
+	$stmt = dbPrepareExecute($base, $request, $types, ...$params);
+	if (!$stmt) { return false; }
+	mysqli_stmt_close($stmt);
+	return true;
+}
+
+
+function dbFetchObjectPrepared($base, $request, $types = "", ...$params)
+{
+	$stmt = dbPrepareExecute($base, $request, $types, ...$params);
+	if (!$stmt) { return null; }
+	$result = mysqli_stmt_get_result($stmt);
+	if (!$result) {
+		mysqli_stmt_close($stmt);
+		return null;
+	}
+	$record = mysqli_fetch_object($result);
+	mysqli_stmt_close($stmt);
+	return $record ?: null;
+}
+
+
+function dbFetchAllPrepared($base, $request, $types = "", ...$params)
+{
+	$stmt = dbPrepareExecute($base, $request, $types, ...$params);
+	if (!$stmt) { return []; }
+	$result = mysqli_stmt_get_result($stmt);
+	if (!$result) {
+		mysqli_stmt_close($stmt);
+		return [];
+	}
+	$records = [];
+	while ($row = mysqli_fetch_object($result)) {
+		$records[] = $row;
+	}
+	mysqli_stmt_close($stmt);
+	return $records;
+}
+
 function validForms($msg, $url, $back = true, $csrfAction = "default")
 {
 	printf("<fieldset><legend>Validation</legend>");
@@ -537,8 +606,8 @@ function validForms($msg, $url, $back = true, $csrfAction = "default")
 	printf("</td></tr></table></fieldset>");
 }
 
-function linkMsg($link, $msg, $img, $class = "msg")
-{
+
+function linkMsg($link, $msg, $img, $class = "msg") {
 	printf("<div class='%s'>", $class);
 	printf("<div><img src='pict/%s' alt='info'></div>", $img);
 	if ($link === "#") {
@@ -550,8 +619,7 @@ function linkMsg($link, $msg, $img, $class = "msg")
 }
 
 
-function traiteStringToBDD($str)
-{
+function traiteStringToBDD($str) {
 	$str = str_split($str);
 	$temp = "";
 	for ($i = 0; $i < count($str); $i++) {
@@ -697,8 +765,7 @@ function registerWebauthnCred()
 	);
 }
 
-function changePassword()
-{
+function changePassword() {
 	genSyslog(__FUNCTION__);
 	$script = $_SESSION["curr_script"];
 	$nonce = $_SESSION["nonce"];
@@ -742,28 +809,21 @@ function changePassword()
 	}
 }
 
-function recordNewPassword($passwd)
-{
+
+function recordNewPassword($passwd) {
 	genSyslog(__FUNCTION__);
-	$base = dbConnect();
-	$passwd = password_hash($passwd, PASSWORD_BCRYPT);
-	$request = sprintf(
-		"UPDATE users SET password='%s' WHERE login='%s'",
-		$passwd,
-		$_SESSION["login"],
-	);
 	if (!isCsrfValid("chg_password")) {
-		dbDisconnect($base);
 		return false;
 	}
-	if (mysqli_query($base, $request)) {
-		dbDisconnect($base);
-		return true;
-	} else {
-		dbDisconnect($base);
+	if (empty($passwd) || !isset($_SESSION["login"]) || empty($_SESSION["login"]) ) {
 		return false;
 	}
-	return false;
+	$base = dbConnect();
+	$login = $_SESSION["login"];
+	$passwd = password_hash($passwd, PASSWORD_BCRYPT);
+	$success = dbExecutePrepared($base, "UPDATE users SET password=? WHERE login=?", "ss", $passwd, $login);
+	dbDisconnect($base);
+	return $success;
 }
 
 function getRole($id)
@@ -792,8 +852,7 @@ function getChapter($id)
 	return sprintf("%d - %s", $row->num, $row->nom);
 }
 
-function getUser($id)
-{
+function getUser($id) {
 	$base = dbConnect();
 	$request = sprintf(
 		"SELECT * FROM users WHERE id='%d' LIMIT 1",
@@ -805,23 +864,22 @@ function getUser($id)
 	return sprintf("%s %s", $row->prenom, $row->nom);
 }
 
-function displayDate($date)
-{
+function displayDate($date) {
 	return date_format(date_create($date), "d F Y");
 }
 
-function displayShortDate($date)
-{
+
+function displayShortDate($date) {
 	return date_format(date_create($date), "d M Y");
 }
 
-function displayVeryShortDate($date)
-{
+
+function displayVeryShortDate($date) {
 	return date_format(date_create($date), "d M");
 }
 
-function computeDuration($begin, $end)
-{
+
+function computeDuration($begin, $end) {
 	$interval = date_diff(date_create($begin), date_create($end));
 	if ($interval->invert) {
 		return "Retard de " . $interval->format("%a jours");

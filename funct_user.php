@@ -31,9 +31,7 @@ function denyAccess($back = "user.php") {
 
 function getProjectRecord($projectId) {
 	$base = dbConnect();
-	$request = sprintf("SELECT * FROM project WHERE id='%d' LIMIT 1", intval($projectId));
-	$result = mysqli_query($base, $request);
-	$record = mysqli_fetch_object($result);
+	$record = dbFetchObjectPrepared($base, "SELECT * FROM project WHERE id=? LIMIT 1", "i", intval($projectId));
 	dbDisconnect($base);
 	return $record ?: null;
 }
@@ -41,9 +39,7 @@ function getProjectRecord($projectId) {
 
 function getTaskRecord($taskId) {
 	$base = dbConnect();
-	$request = sprintf("SELECT * FROM task WHERE id='%d' LIMIT 1", intval($taskId));
-	$result = mysqli_query($base, $request);
-	$record = mysqli_fetch_object($result);
+	$record = dbFetchObjectPrepared($base, "SELECT * FROM task WHERE id=? LIMIT 1", "i", intval($taskId));
 	dbDisconnect($base);
 	return $record ?: null;
 }
@@ -51,9 +47,7 @@ function getTaskRecord($taskId) {
 
 function getKanbanRecord($kanbanId) {
 	$base = dbConnect();
-	$request = sprintf("SELECT * FROM kanban WHERE id='%d' LIMIT 1", intval($kanbanId));
-	$result = mysqli_query($base, $request);
-	$record = mysqli_fetch_object($result);
+	$record = dbFetchObjectPrepared($base, "SELECT * FROM kanban WHERE id=? LIMIT 1", "i", intval($kanbanId));
 	dbDisconnect($base);
 	return $record ?: null;
 }
@@ -270,7 +264,7 @@ function recordProject($action) {
 				dbDisconnect($base);
 				return false;
 			}
-			$request = sprintf("INSERT INTO project (nom, description, chapter, directeur, chef, datedebut, datefin) VALUES ('%s', '%s', '%d', '%d', '%d', '%s', '%s')", $nom, $description, $chapter, $directeur, $chef, $datedebut, $datefin);
+			$success = dbExecutePrepared($base, "INSERT INTO project (nom, description, chapter, directeur, chef, datedebut, datefin) VALUES (?, ?, ?, ?, ?, ?, ?)", "ssiiiss", $nom, $description, $chapter, $directeur, $chef, $datedebut, $datefin);
 			break;
 		case 'update':
 			if (!isset($_SESSION['current_project'])) {
@@ -279,10 +273,6 @@ function recordProject($action) {
 			}
 			$id = intval($_SESSION['current_project']);
 			if (!canEditProject($id)) {
-				dbDisconnect($base);
-				return false;
-			}
-			if (!isset($_SESSION['current_project'])) {
 				dbDisconnect($base);
 				return false;
 			}
@@ -299,7 +289,10 @@ function recordProject($action) {
 				dbDisconnect($base);
 				return false;
 			}
-			$request = sprintf("UPDATE project SET nom='%s', description='%s', chapter='%d', directeur='%d', chef='%d', datedebut='%s', datefin='%s' WHERE id='%d'", $nom, $description, $chapter, $directeur, $chef, $datedebut, $datefin, $id);
+			$success = dbExecutePrepared($base, "UPDATE project SET nom=?, description=?, chapter=?, directeur=?, chef=?, datedebut=?, datefin=? WHERE id=?", "ssiiissi", $nom, $description, $chapter, $directeur, $chef, $datedebut, $datefin, $id);
+			if ($success) {
+				unset($_SESSION['current_project']);
+			}
 			break;
 		case 'close':
 			$id = isset($_POST['project_id']) ? intval($_POST['project_id']) : 0;
@@ -307,27 +300,21 @@ function recordProject($action) {
 				dbDisconnect($base);
 				return false;
 			}
-			$request = sprintf("UPDATE project SET complete='1' WHERE id='%d'", $id);
+			$complete = 1;
+			$success = dbExecutePrepared($base, "UPDATE project SET complete=? WHERE id=?", "ii", $complete, $id);
 			break;
 		default:
+			dbDisconnect($base);
 			return false;
 	}
-	if (mysqli_query($base, $request)) {
-		if ($action === 'update') {
-			unset($_SESSION['current_project']);
-		}
-		dbDisconnect($base);
-		return true;
-	}
 	dbDisconnect($base);
-	return false;
+	return $success;
 }
 
 
 function displayProjects()
 {
 	$base = dbConnect();
-
 	switch (intval($_SESSION['role'])) {
 		case 2: // Directeur de projet
 			$request = sprintf(
@@ -335,11 +322,9 @@ function displayProjects()
 				intval($_SESSION['uid'])
 			);
 			break;
-
 		case 4: // Manager
 			$request = "SELECT * FROM project ORDER BY chapter ASC, complete ASC, datedebut ASC";
 			break;
-
 		default: // Chef de projet
 			$request = sprintf(
 				"SELECT * FROM project WHERE chef='%d' ORDER BY chapter ASC, complete ASC, datedebut ASC",
@@ -347,58 +332,44 @@ function displayProjects()
 			);
 			break;
 	}
-
 	$result = mysqli_query($base, $request);
 	dbDisconnect($base);
-
 	$chapterRef = 0;
 	$openTable = false;
-
 	printf("<div class='project'>\n");
-
 	while ($row = mysqli_fetch_object($result)) {
 		$closed = isProjectClosed($row->id);
-
 		if (intval($row->chapter) !== $chapterRef) {
 			if ($openTable) {
 				printf("</table>\n");
 			}
-
 			printf("<h3>%s</h3>\n", getChapter($row->chapter));
 			printf("<table>\n");
 			printf(
 				"<tr><th>Nom</th><th>Directeur de projet</th><th>Chef de projet</th><th>Date de début</th><th>Date de fin</th><th>Avancement</th>"
 			);
-
 			if (in_array($_SESSION['role'], array('2', '4'))) {
 				printf("<th>Etat</th>");
 			}
-
 			printf("</tr>\n");
-
 			$chapterRef = intval($row->chapter);
 			$openTable = true;
 		}
-
 		printf("<tr>\n");
-
 		printf(
 			"<td><a href='user.php?action=mgmt&value=%d'>%s</a></td>\n",
 			intval($row->id),
 			traiteStringFromBDD($row->nom)
 		);
-
 		printf("<td>%s</td>\n", getUser($row->directeur));
 		printf("<td>%s</td>\n", getUser($row->chef));
 		printf("<td>%s</td>\n", displayShortDate($row->datedebut));
 		printf("<td>%s</td>\n", displayShortDate($row->datefin));
-
 		if ($closed) {
 			printf("<td><div class='finished'>Projet clos</div></td>\n");
 		} else {
 			printf("<td>%s</td>\n", projectProgressBar($row->id));
 		}
-
 		if (in_array($_SESSION['role'], array('2', '4'))) {
 			if ($closed) {
 				printf("<td><span class='finished'>Clos</span></td>\n");
@@ -421,16 +392,13 @@ function displayProjects()
 				printf("<td><span class='live'>Actif</span></td>\n");
 			}
 		}
-
 		printf("</tr>\n");
 	}
-
 	if ($openTable) {
 		printf("</table>\n");
 	} else {
 		printf("<table><tr><td>Aucun projet à afficher.</td></tr></table>\n");
 	}
-
 	printf("</div>\n");
 }
 
@@ -609,14 +577,17 @@ function recordNewTask() {
 	$nom = isset($_POST['nom']) ? traiteStringToBDD($_POST['nom']) : NULL;
 	$datedebut = isset($_POST['datedebut']) ? $_POST['datedebut'] : NULL;
 	$datefin = isset($_POST['datefin']) ? $_POST['datefin'] : NULL;
-	$request = sprintf("INSERT INTO task (projet, nom, datedebut, datefin, avancement) VALUES ('%d', '%s', '%s', '%s', '0')", $projet, $nom, $datedebut, $datefin);
-	if (mysqli_query($base, $request)) {
-		dbDisconnect($base);
-		return true;
-	} else {
+	$dateDebutObj = DateTime::createFromFormat('Y-m-d', $datedebut);
+	$dateFinObj = DateTime::createFromFormat('Y-m-d', $datefin);
+
+	if (empty($nom) || !$dateDebutObj || $dateDebutObj->format('Y-m-d') !== $datedebut || !$dateFinObj || $dateFinObj->format('Y-m-d') !== $datefin || $datefin < $datedebut) {
 		dbDisconnect($base);
 		return false;
 	}
+
+	$success = dbExecutePrepared( $base, "INSERT INTO task (projet, nom, datedebut, datefin, avancement) VALUES (?, ?, ?, ?, 0)", "isss", $projet, $nom, $datedebut, $datefin);
+	dbDisconnect($base);
+	return $success;
 }
 
 
@@ -632,27 +603,26 @@ function incrDecrTask($action) {
 		dbDisconnect($base);
 		return false;
 	}
-	$request = sprintf("SELECT avancement FROM task WHERE id='%d' LIMIT 1", $id);
-	$result = mysqli_query($base,$request);
-	$record = mysqli_fetch_object($result);
+	$record = dbFetchObjectPrepared($base, "SELECT avancement FROM task WHERE id=? LIMIT 1", "i", $id);
+	if (!$record) {
+		dbDisconnect($base);
+		return false;
+	}
 	$progress = intval($record->avancement);
 	switch ($action) {
 		case 'increase':
 			if ($progress < 100) { $progress += 10; }
-			$request = sprintf("UPDATE task SET avancement='%d' WHERE id='%d' ", $progress, $id);
 			break;
 		case 'decrease':
 			if ($progress > 0) { $progress -= 10; }
-			$request = sprintf("UPDATE task SET avancement='%d' WHERE id='%d' ", $progress, $id);
 			break;
+		default:
+			dbDisconnect($base);
+			return false;
 	}
-	if (mysqli_query($base, $request)) {
-		dbDisconnect($base);
-		return true;
-	} else {
-		dbDisconnect($base);
-		return false;
-	}
+	$success = dbExecutePrepared($base, "UPDATE task SET avancement=? WHERE id=?", "ii", $progress, $id);
+	dbDisconnect($base);
+	return $success;
 }
 
 
@@ -886,27 +856,22 @@ function displayKanban() {
 }
 
 
-function recordKanban($action)
-{
+function recordKanban($action) {
 	genSyslog(__FUNCTION__);
 
 	switch ($action) {
 		case 'add':
 			$csrfAction = 'add_kanban';
 			break;
-
 		case 'update':
 			$csrfAction = 'update_kanban';
 			break;
-
 		case 'modify':
 			$csrfAction = 'modify_kanban';
 			break;
-
 		case 'delete':
 			$csrfAction = 'del_kanban';
 			break;
-
 		default:
 			return false;
 	}
@@ -920,6 +885,8 @@ function recordKanban($action)
 		return $dateObj && $dateObj->format('Y-m-d') === $date;
 	};
 
+	$base = dbConnect();
+
 	switch ($action) {
 		case 'add':
 			$user = intval($_SESSION['uid']);
@@ -929,64 +896,27 @@ function recordKanban($action)
 			$datedebut = date('Y-m-d', time());
 			$datefin = isset($_POST['datefin']) ? trim($_POST['datefin']) : '';
 			$priority = isset($_POST['priority']) ? intval($_POST['priority']) : 0;
-
-			if (
-				empty($nom) ||
-				empty($description) ||
-				!$isValidDate($datefin) ||
-				$datefin < $datedebut ||
-				$priority < 1 ||
-				$priority > 5
-			) {
+			if ( $user <= 0 || empty($nom) || empty($description) || !$isValidDate($datefin) || $datefin < $datedebut || $priority < 1 || $priority > 5 ) {
+				dbDisconnect($base);
 				return false;
 			}
-
-			$base = dbConnect();
-
-			$request = sprintf(
-				"INSERT INTO kanban (user, progress, nom, description, datedebut, datefin, priority) VALUES ('%d', '%d', '%s', '%s', '%s', '%s', '%d')",
-				$user,
-				$progress,
-				$nom,
-				$description,
-				$datedebut,
-				$datefin,
-				$priority
-			);
+			$success = dbExecutePrepared($base, "INSERT INTO kanban (user, progress, nom, description, datedebut, datefin, priority) VALUES (?, ?, ?, ?, ?, ?, ?)", "iissssi", $user, $progress, $nom, $description, $datedebut, $datefin, $priority);
 			break;
 
 		case 'update':
 			$id = isset($_POST['task_id']) ? intval($_POST['task_id']) : 0;
 			$progressName = isset($_POST['progress']) ? traiteStringToBDD($_POST['progress']) : NULL;
-
-			if (
-				$id <= 0 ||
-				empty($progressName) ||
-				!canEditKanban($id)
-			) {
-				return false;
-			}
-
-			$base = dbConnect();
-
-			$request = sprintf(
-				"SELECT id FROM progress WHERE nom='%s' LIMIT 1",
-				$progressName
-			);
-			$result = mysqli_query($base, $request);
-
-			if (!$result || !mysqli_num_rows($result)) {
+			if ( $id <= 0 || empty($progressName) || !canEditKanban($id) ) {
 				dbDisconnect($base);
 				return false;
 			}
-
-			$record = mysqli_fetch_object($result);
-
-			$request = sprintf(
-				"UPDATE kanban SET progress='%d' WHERE id='%d'",
-				intval($record->id),
-				$id
-			);
+			$record = dbFetchObjectPrepared($base, "SELECT id FROM progress WHERE nom=? LIMIT 1", "s", $progressName);
+			if (!$record) {
+				dbDisconnect($base);
+				return false;
+			}
+			$progress = intval($record->id);
+			$success = dbExecutePrepared($base, "UPDATE kanban SET progress=? WHERE id=?", "ii", $progress, $id);
 			break;
 
 		case 'modify':
@@ -995,57 +925,28 @@ function recordKanban($action)
 			$description = isset($_POST['udescription']) ? traiteStringToBDD($_POST['udescription']) : NULL;
 			$datefin = isset($_POST['udatefin']) ? trim($_POST['udatefin']) : '';
 			$priority = isset($_POST['upriority']) ? intval($_POST['upriority']) : 0;
-
-			if (
-				$id <= 0 ||
-				empty($nom) ||
-				empty($description) ||
-				!$isValidDate($datefin) ||
-				$priority < 1 ||
-				$priority > 5 ||
-				!canEditKanban($id)
-			) {
+			if ( $id <= 0 || empty($nom) || empty($description) || !$isValidDate($datefin) || $priority < 1 || $priority > 5 || !canEditKanban($id) ) {
+				dbDisconnect($base);
 				return false;
 			}
-
-			$base = dbConnect();
-
-			$request = sprintf(
-				"UPDATE kanban SET nom='%s', description='%s', datefin='%s', priority='%d' WHERE id='%d'",
-				$nom,
-				$description,
-				$datefin,
-				$priority,
-				$id
-			);
+			$success = dbExecutePrepared($base, "UPDATE kanban SET nom=?, description=?, datefin=?, priority=? WHERE id=?", "sssii", $nom, $description, $datefin, $priority, $id);
 			break;
 
 		case 'delete':
 			$id = isset($_POST['delid']) ? intval($_POST['delid']) : 0;
-
-			if (
-				$id <= 0 ||
-				!canEditKanban($id)
-			) {
+			if ($id <= 0 || !canEditKanban($id) ) {
+				dbDisconnect($base);
 				return false;
 			}
-
-			$base = dbConnect();
-
-			$request = sprintf(
-				"DELETE FROM kanban WHERE id='%d'",
-				$id
-			);
+			$success = dbExecutePrepared($base, "DELETE FROM kanban WHERE id=?", "i", $id);
 			break;
-	}
+		default:
+			dbDisconnect($base);
+			return false;
 
-	if (mysqli_query($base, $request)) {
-		dbDisconnect($base);
-		return true;
 	}
-
 	dbDisconnect($base);
-	return false;
+	return $success;
 }
 
 
