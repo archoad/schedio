@@ -232,6 +232,7 @@ function displayProjectHead() {
 	$request = sprintf("SELECT * FROM project WHERE id='%d' LIMIT 1", intval($_SESSION['project']));
 	$result = mysqli_query($base, $request);
 	$record = mysqli_fetch_object($result);
+	$date = date_create('2000-01-01');
 	dbDisconnect($base);
 	printf("<div class='project'>\n<table>\n<tr>\n");
 	printf("<th colspan='2' class='projet_title'>%s</th>\n",  traiteStringFromBDD($record->nom));
@@ -255,7 +256,7 @@ function displayProjectHead() {
 	if (intval($record->complete)) {
 		printf("<th colspan='2'>&nbsp;</th>\n");
 	} else {
-		printf("<th>Temps restant</th><td>%s</td>\n", computeDuration(strftime("%Y-%m-%d", time()), $record->datefin));
+		printf("<th>Temps restant</th><td>%s</td>\n", computeDuration(date_format(date_create('now'), "Y-m-d"), $record->datefin));
 	}
 	printf("</tr></table></div>\n");
 }

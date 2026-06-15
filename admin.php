@@ -20,95 +20,116 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 =========================================================*/
 
-
-include("functions.php");
-include("funct_admin.php");
-session_start();
-$authorizedRole = array('1');
+include "functions.php";
+include "funct_admin.php";
+startSession();
+$authorizedRole = ["1"];
 isSessionValid($authorizedRole);
 headPage($appli_titre, "Administration");
 
+if (isset($_GET["action"])) {
+	switch ($_GET["action"]) {
+		case "new_user":
+			createUser();
+			footPage();
+			break;
 
+		case "record_user":
+			if (recordUser("add")) {
+				linkMsg(
+					$_SESSION["curr_script"],
+					"Utilisateur ajouté dans la base",
+					"ok.png",
+				);
+			} else {
+				linkMsg(
+					$_SESSION["curr_script"],
+					"Erreur d'enregistrement",
+					"alert.png",
+				);
+			}
+			footPage();
+			break;
 
-if (isset($_GET['action'])) {
-	switch ($_GET['action']) {
-	case 'new_user':
-		createUser();
-		footPage();
-		break;
+		case "modif_user":
+			if (empty($_POST["user"])) {
+				selectUserModif();
+			} else {
+				$_SESSION["current_user"] = $_POST["user"];
+				modifUser();
+			}
+			footPage();
+			break;
 
-	case 'record_user':
-		if (recordUser('add')) {
-			linkMsg($_SESSION['curr_script'], "Utilisateur ajouté dans la base", "ok.png");
-		} else {
-			linkMsg($_SESSION['curr_script'], "Erreur d'enregistrement", "alert.png");
-		}
-		footPage();
-		break;
+		case "update_user":
+			if (recordUser("update")) {
+				linkMsg(
+					$_SESSION["curr_script"],
+					"Utilisateur modifié dans la base",
+					"ok.png",
+				);
+			} else {
+				linkMsg(
+					$_SESSION["curr_script"],
+					"Erreur de modification",
+					"alert.png",
+				);
+			}
+			footPage();
+			break;
 
-	case 'modif_user':
-		if (empty($_POST['user'])) {
-			selectUserModif();
-		} else {
-			$_SESSION['current_user'] = $_POST['user'];
-			modifUser();
-		}
-		footPage();
-		break;
+		case "maintenance":
+			maintenanceBDD();
+			footPage($_SESSION["curr_script"], "Accueil");
+			break;
 
-	case 'update_user':
-		if (recordUser('update')) {
-		linkMsg($_SESSION['curr_script'], "Utilisateur modifié dans la base", "ok.png");
-	} else {
-		linkMsg($_SESSION['curr_script'], "Erreur de modification", "alert.png");
-	}
-	footPage();
-	break;
+		case "authentication":
+			menuAuthentication();
+			footPage($_SESSION["curr_script"], "Accueil");
+			break;
 
-	case 'maintenance':
-		maintenanceBDD();
-		footPage($_SESSION['curr_script'], "Accueil");
-		break;
+		case "password":
+			changePassword();
+			footPage();
+			break;
 
-	case 'authentication':
-		menuAuthentication();
-		footPage($_SESSION['curr_script'], "Accueil");
-		break;
+		case "chg_password":
+			if (recordNewPassword($_POST["new1"])) {
+				linkMsg(
+					$_SESSION["curr_script"],
+					"Mot de passe changé avec succès",
+					"ok.png",
+				);
+			} else {
+				linkMsg(
+					$_SESSION["curr_script"],
+					"Erreur de changement de mot de passe",
+					"alert.png",
+				);
+			}
+			footPage();
+			break;
 
-	case 'password':
-		changePassword();
-		footPage();
-		break;
+		case "regwebauthn":
+			registerWebauthnCred();
+			footPage();
+			break;
 
-	case 'chg_password':
-		if (recordNewPassword($_POST['new1'])) {
-			linkMsg($_SESSION['curr_script'], "Mot de passe changé avec succès", "ok.png");
-		} else {
-			linkMsg($_SESSION['curr_script'], "Erreur de changement de mot de passe", "alert.png");
-		}
-		footPage();
-		break;
+		case "rm_token":
+			if (isset($_SESSION["token"])) {
+				unset($_SESSION["token"]);
+			}
+			menuAdmin();
+			footPage();
+			break;
 
-	case 'regwebauthn':
-		registerWebauthnCred();
-		footPage();
-		break;
-
-	case 'rm_token':
-		if (isset($_SESSION['token'])) {
-			unset($_SESSION['token']);
-		}
-		menuAdmin();
-		footPage();
-		break;
-
-	default:
-		if (isset($_SESSION['token'])) {
-			unset($_SESSION['token']);
-		}
-		menuAdmin();
-		footPage();
-		break;
+		default:
+			if (isset($_SESSION["token"])) {
+				unset($_SESSION["token"]);
+			}
+			menuAdmin();
+			footPage();
+			break;
 	}
 } else {
 	menuAdmin();

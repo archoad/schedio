@@ -20,12 +20,11 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 =========================================================*/
 
-include("functions.php");
-session_start();
-$authorizedRole = array('3', '4', '100');
+include "functions.php";
+startSession();
+$authorizedRole = ["3", "4", "100"];
 isSessionValid($authorizedRole);
 headPage($appli_titre, "Aide et documentation");
 footPage("schedio.php", "Accueil");
-
 
 ?>

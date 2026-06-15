@@ -20,16 +20,13 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 =========================================================*/
 
-
-
-
-include("functions.php");
+include "functions.php";
 startSession();
 
-
-function headPageAuth() {
+function headPageAuth()
+{
 	$cspPolicy = genCspPolicy();
-	$_SESSION['rand'] = base64UrlEncode(genNonce(16));
+	$_SESSION["rand"] = base64UrlEncode(genNonce(16));
 	header("cache-control: no-cache, must-revalidate");
 	header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");
 	header("Content-type: text/html; charset=utf-8");
@@ -37,61 +34,95 @@ function headPageAuth() {
 	header("X-XSS-Protection: 1; mode=block");
 	header("X-Frame-Options: deny");
 	header($cspPolicy);
-	ini_set('default_charset', 'UTF-8');
+	ini_set("default_charset", "UTF-8");
 	printf("<!DOCTYPE html>\n<html lang='fr-FR'>\n<head>\n");
-	printf("<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />\n");
+	printf(
+		"<meta http-equiv='Content-Type' content='text/html; charset=utf-8'>\n",
+	);
 	printf("<link rel='apple-touch-icon' href='pict/logoArchoadApple.png'>");
-	printf("<link rel='icon' type='image/png' href='pict/favicon.png' />\n");
-	printf("<link nonce='%s' href='styles/style.%s.css' rel='StyleSheet' type='text/css' media='all' />\n", $_SESSION['nonce'], $_SESSION['theme']);
-	printf("<link nonce='%s' href='styles/style.base.css' rel='StyleSheet' type='text/css' media='all' />\n", $_SESSION['nonce']);
-	printf("<script nonce='%s' src='js/mfa.js'></script>", $_SESSION['nonce']);
+	printf("<link rel='icon' type='image/png' href='pict/favicon.png'>\n");
+	printf(
+		"<link nonce='%s' href='styles/style.%s.css' rel='StyleSheet' type='text/css' media='all'>\n",
+		$_SESSION["nonce"],
+		$_SESSION["theme"],
+	);
+	printf(
+		"<link nonce='%s' href='styles/style.base.css' rel='StyleSheet' type='text/css' media='all'>\n",
+		$_SESSION["nonce"],
+	);
+	printf("<script nonce='%s' src='js/mfa.js'></script>", $_SESSION["nonce"]);
 	printf("<title>Authentification</title>\n");
 	printf("</head>\n<body>\n");
 }
 
-
-function footPageAuth() {
-	printf("</body>\n</html>\n");
+function footPageAuth()
+{
+	printf("</body></html>");
 }
 
-
-function menuLogin() {
+function menuLogin()
+{
 	global $auhtPict;
 	genSyslog(__FUNCTION__);
 	printf("<div class='authcont'>");
 	printf("<div class='auth'>");
 	printf("<img src=%s alt='CyberSécurité'>", $auhtPict);
 	printf("</div><div class='auth'>");
-	printf("<form method='post' id='auth' action='schedio.php?rand=%s'>", $_SESSION['rand']);
-	printf("<input type='text' size='20' maxlength='20' name='login' id='login' placeholder='Identifiant' autocomplete='username' autofocus required>");
+	printf(
+		"<form method='post' id='auth' action='schedio.php?rand=%s'>",
+		$_SESSION["rand"],
+	);
+	printf(
+		"<input type='text' size='20' maxlength='20' name='login' id='login' placeholder='Identifiant' autocomplete='username' autofocus required>",
+	);
 	printf("<input type='submit' id='valid' value='Continuer'>");
 	printf("</form></div></div>");
 }
 
-
-function menuPassword($msg='') {
+function menuPassword($msg = "")
+{
 	global $auhtPict;
 	genSyslog(__FUNCTION__);
 	printf("<div class='authcont'>");
-	printf("<div class='auth'><img src=%s alt='CyberSécurité'></div>", $auhtPict);
+	printf(
+		"<div class='auth'><img src=%s alt='CyberSécurité'></div>",
+		$auhtPict,
+	);
 	printf("<div class='auth'>");
-	if (isset($_SESSION['registration'])) {
+	if (isset($_SESSION["registration"])) {
 		printf("<div class='fido2'>");
-		printf("<div><img id='authenticateImg' src='pict/fido2key.png' alt='info'></div>");
+		printf(
+			"<div><img id='authenticateImg' src='pict/fido2key.png' alt='info'></div>",
+		);
 		printf("<div><p id='authenticateMsg'></p></div>");
-		printf("<div><a class='none' id='endAuthLink' href=''>Continuer</a></div>", $_SESSION['rand']);
+		printf(
+			"<div><a class='none' id='endAuthLink' href=''>Continuer</a></div>",
+			$_SESSION["rand"],
+		);
 		printf("</div>");
-		printf("<script nonce='%s'>document.body.addEventListener('load', newAuthentication());</script>", $_SESSION['nonce']);
+		printf(
+			"<script nonce='%s'>document.body.addEventListener('load', newAuthentication());</script>",
+			$_SESSION["nonce"],
+		);
 	} else {
-		printf("<form method='post' id='auth' action='schedio.php?rand=%s&action=connect'>", $_SESSION['rand']);
-		printf("<input type='password' size='30' maxlength='30' name='password' id='password' placeholder='Mot de passe' autocomplete='current-password' autofocus required>");
+		printf(
+			"<form method='post' id='auth' action='schedio.php?rand=%s&action=connect'>",
+			$_SESSION["rand"],
+		);
+		printf(
+			"<input type='password' size='30' maxlength='30' name='password' id='password' placeholder='Mot de passe' autocomplete='current-password' autofocus required>",
+		);
 		printf("<div id='divcaptcha' class='captcha'>");
 		printf("<img src='captcha.php' alt='captcha'/>");
-		printf("<input type='text' size='6' maxlength='6' name='captcha' id='captcha' placeholder='Saisir le code' required>");
+		printf(
+			"<input type='text' size='6' maxlength='6' name='captcha' id='captcha' placeholder='Saisir le code' required>",
+		);
 		printf("</div>");
 		printf("<input type='submit' id='valid' value='Connexion'>");
-		if ($msg<>'') {
-			printf("<div class='help'><img src='pict/help.png' alt='Aide'></div>");
+		if ($msg != "") {
+			printf(
+				"<div class='help'><img src='pict/help.png' alt='Aide'></div>",
+			);
 			printf("<p>%s</p>", $msg);
 			printf("<a href='aide.php'>(Afficher l'aide en ligne)</a>");
 		}
@@ -100,10 +131,13 @@ function menuPassword($msg='') {
 	printf("</div></div>");
 }
 
-
-function getUserData() {
+function getUserData()
+{
 	$base = dbConnect();
-	$request = sprintf("SELECT * FROM users WHERE login='%s' LIMIT 1", $_SESSION['login']);
+	$request = sprintf(
+		"SELECT * FROM users WHERE login='%s' LIMIT 1",
+		$_SESSION["login"],
+	);
 	$result = mysqli_query($base, $request);
 	if (mysqli_num_rows($result)) {
 		$row = mysqli_fetch_object($result);
@@ -115,12 +149,15 @@ function getUserData() {
 	}
 }
 
-
-function authentification($password) {
+function authentification($password)
+{
 	genSyslog(__FUNCTION__);
 	$data = getUserData();
 	if ($data) {
-		if (($_SESSION['login'] === $data->login) and (password_verify($password, $data->password))) {
+		if (
+			$_SESSION["login"] === $data->login &&
+			password_verify($password, $data->password)
+		) {
 			return $data;
 		} else {
 			return false;
@@ -130,75 +167,76 @@ function authentification($password) {
 	}
 }
 
-
-function initiateSession($data) {
+function initiateSession($data)
+{
 	genSyslog(__FUNCTION__);
-	global $cssTheme, $captchaMode, $sessionDuration;
+	global $cssTheme, $captchaMode, $sessionDuration, $datefmt;
 	session_regenerate_id();
-	date_default_timezone_set('Europe/Paris');
+	date_default_timezone_set("Europe/Paris");
 	$date = getdate();
-	$annee = $date['year'];
-	$_SESSION['theme'] = $cssTheme;
-	$_SESSION['captchaMode'] = $captchaMode;
-	$_SESSION['day'] = mb_strtolower(strftime("%A %d %B %Y", time()));
-	$_SESSION['hour'] = mb_strtolower(strftime("%H:%M", time()));
-	$_SESSION['os'] = detectOS();
-	$_SESSION['browser'] = detectBrowser();
-	$_SESSION['ipaddr'] = detectIP();
-	$_SESSION['uid'] = $data->id;
-	$_SESSION['nom'] = $data->nom;
-	$_SESSION['prenom'] = $data->prenom;
-	$_SESSION['role'] = $data->role;
-	$_SESSION['login'] = $data->login;
-	$_SESSION['annee'] = $annee;
-	$_SESSION['expire'] = time() + $sessionDuration;
+	$annee = $date["year"];
+	$_SESSION["theme"] = $cssTheme;
+	$_SESSION["captchaMode"] = $captchaMode;
+	datefmt_set_pattern($datefmt, 'EEEE dd MMMM yyyy');
+	$_SESSION["day"] = mb_strtolower(datefmt_format($datefmt, time()));
+	datefmt_set_pattern($datefmt, 'HH:mm');
+	$_SESSION["hour"] = mb_strtolower(datefmt_format($datefmt, time()));
+	$_SESSION["os"] = detectOS();
+	$_SESSION["browser"] = detectBrowser();
+	$_SESSION["ipaddr"] = detectIP();
+	$_SESSION["uid"] = $data->id;
+	$_SESSION["nom"] = $data->nom;
+	$_SESSION["prenom"] = $data->prenom;
+	$_SESSION["role"] = $data->role;
+	$_SESSION["login"] = $data->login;
+	$_SESSION["annee"] = $annee;
+	$_SESSION["expire"] = time() + $sessionDuration;
 }
 
-
-function initiateNullSession() {
+function initiateNullSession()
+{
 	global $cssTheme, $captchaMode, $sessionDuration;
 	session_regenerate_id();
-	unset($_SESSION['uid']);
-	unset($_SESSION['login']);
-	unset($_SESSION['webauthn']);
-	unset($_SESSION['sess_captcha']);
-	unset($_SESSION['registration']);
-	$_SESSION['theme'] = $cssTheme;
-	$_SESSION['captchaMode'] = $captchaMode;
-	$_SESSION['role'] = '100';
-	$_SESSION['uid'] = 'null';
-	$_SESSION['curr_script'] = 'schedio.php';
-	$_SESSION['expire'] = time() + $sessionDuration;
+	unset($_SESSION["uid"]);
+	unset($_SESSION["login"]);
+	unset($_SESSION["webauthn"]);
+	unset($_SESSION["sess_captcha"]);
+	unset($_SESSION["registration"]);
+	$_SESSION["theme"] = $cssTheme;
+	$_SESSION["captchaMode"] = $captchaMode;
+	$_SESSION["role"] = "100";
+	$_SESSION["uid"] = "null";
+	$_SESSION["curr_script"] = "schedio.php";
+	$_SESSION["expire"] = time() + $sessionDuration;
 }
 
-
-function validateCaptcha($captcha) {
-	genSyslog(__FUNCTION__);
-	if (strncmp($_SESSION['sess_captcha'], $captcha, 6) === 0) {
+function validateCaptcha($captcha)
+{
+	if (strncmp($_SESSION["sess_captcha"], $captcha, 6) === 0) {
 		return true;
 	} else {
 		return false;
 	}
 }
 
-
-function redirectUser($data) {
+function redirectUser($data)
+{
 	global $appli_titre;
 	genSyslog(__FUNCTION__);
 	initiateSession($data);
-	if(isset($_SESSION['sess_captcha'])) {
-		unset($_SESSION['sess_captcha']);
+	if (isset($_SESSION["sess_captcha"])) {
+		unset($_SESSION["sess_captcha"]);
 	}
-	switch ($_SESSION['role']) {
-		case '1': // Administrateur
-			$_SESSION['curr_script'] = 'admin.php';
-			header('Location: admin.php');
+	switch ($_SESSION["role"]) {
+		case "1": // Administrateur
+			$_SESSION["curr_script"] = "admin.php";
+			header("Location: admin.php");
 			break;
-		case '2': // Directeur de projet
-		case '3': // Chef de projet
-		case '4': // Manager
-			$_SESSION['curr_script'] = 'user.php';
-			header('Location: user.php');
+		case "2": // Directeur de projet
+		case "3": // Chef de projet
+		case "4": // Manager
+			$_SESSION["curr_script"] = "user.php";
+			header("Location: user.php");
 			break;
 		default:
 			destroySession();
@@ -206,13 +244,13 @@ function redirectUser($data) {
 	}
 }
 
-
-if (isset($_GET['rand']) && ($_GET['rand'] === $_SESSION['rand'])) {
-	if (isset($_GET['action'])) {
-		switch ($_GET['action']) {
-			case 'connect':
-				if (isset($_SESSION['webauthn'])) { //Webauthn authentication
-					if ($_SESSION['webauthn']) {
+if (isset($_GET["rand"]) && $_GET["rand"] === $_SESSION["rand"]) {
+	if (isset($_GET["action"])) {
+		switch ($_GET["action"]) {
+			case "connect":
+				if (isset($_SESSION["webauthn"])) {
+					//Webauthn authentication
+					if ($_SESSION["webauthn"]) {
 						$data = getUserData();
 						if ($data) {
 							redirectUser($data);
@@ -222,9 +260,10 @@ if (isset($_GET['rand']) && ($_GET['rand'] === $_SESSION['rand'])) {
 					} else {
 						destroySession();
 					}
-				} else { // Password authentication
-					if (validateCaptcha($_POST['captcha'])) {
-						$data = authentification($_POST['password']);
+				} else {
+					// Password authentication
+					if (validateCaptcha($_POST["captcha"])) {
+						$data = authentification($_POST["password"]);
 						if ($data) {
 							redirectUser($data);
 						} else {
@@ -237,7 +276,7 @@ if (isset($_GET['rand']) && ($_GET['rand'] === $_SESSION['rand'])) {
 					}
 				}
 				break;
-			case 'disconnect':
+			case "disconnect":
 				destroySession();
 				break;
 			default:
@@ -245,8 +284,8 @@ if (isset($_GET['rand']) && ($_GET['rand'] === $_SESSION['rand'])) {
 				break;
 		}
 	} else {
-		if (isset($_POST['login'])) {
-			$_SESSION['login'] = traiteStringToBDD($_POST['login']);
+		if (isset($_POST["login"])) {
+			$_SESSION["login"] = traiteStringToBDD($_POST["login"]);
 			getCredentialFromDb();
 			headPageAuth();
 			menuPassword();
@@ -264,6 +303,5 @@ if (isset($_GET['rand']) && ($_GET['rand'] === $_SESSION['rand'])) {
 	menuLogin();
 	footPageAuth();
 }
-
 
 ?>
