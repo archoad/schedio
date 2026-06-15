@@ -95,26 +95,3 @@ switch ($_SESSION["captchaMode"]) {
 imagepng($img);
 imagedestroy($img);
 ?>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-?>
- ?>
- ?>

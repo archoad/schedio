@@ -23,12 +23,12 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 // Nom de la machine hébergeant le serveur MySQL
 $servername = 'localhost';
-// Nom de la base de données
+
 $dbname = 'schedio';
 // Nom de l'utilisateur autorisé à se connecter sur la BDD
-$login = 'web';
+$login = 'CHANGEME';
 // Mot de passe de connexion
-$passwd = 'webphpsql';
+$passwd = 'CHANGEME';
 // Titre de l'application
 $appli_titre = "Schedio - Gestion de projet";
 $appli_titre_short = "Schedio";

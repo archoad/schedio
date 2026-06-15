@@ -4,7 +4,7 @@
 
 
 $tmpDir = sys_get_temp_dir();
-is_writable($tmpDir));
+is_writable($tmpDir);
 $tmpFile = sprintf("%s/%s", $tmpDir, uniqid("pandoc"));
 exec('which pandoc', $output, $returnVar);
 if ($returnVar === 0) { $executable = $output[0]; }

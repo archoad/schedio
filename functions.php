@@ -552,46 +552,6 @@ function linkMsg($link, $msg, $img, $class = "msg")
 	printf("</div>");
 }
 
-function recordLog()
-{
-	genSyslog(__FUNCTION__);
-	$id_etab = $_SESSION["id_etab"];
-	$annee = $_SESSION["annee"];
-	$id_quiz = $_SESSION["quiz"];
-	$base = dbConnect();
-	$request = sprintf(
-		"SELECT reponses FROM assess WHERE annee='%s' AND etablissement='%d' AND quiz='%d' LIMIT 1",
-		$annee,
-		$id_etab,
-		$id_quiz,
-	);
-	$result = mysqli_query($base, $request);
-	$row = mysqli_fetch_object($result);
-	$rep = unserialize($row->reponses);
-	if (empty($rep)) {
-		$tabdiff = [];
-		foreach ($_POST as $key => $val) {
-			if ($val != "" && $val != 0) {
-				$tabdiff[$key] = $val;
-			}
-		}
-	} else {
-		$tabdiff = array_diff_assoc($_POST, $rep);
-	}
-	$tabstr = mysqli_real_escape_string($base, serialize($tabdiff));
-	$request = sprintf(
-		"INSERT INTO journal (ip, etablissement, quiz, navigateur, os, user, action) VALUES ('%s', '%d', '%d', '%s', '%s', '%s', '%s')",
-		$_SESSION["ipaddr"],
-		$id_etab,
-		$id_quiz,
-		$_SESSION["browser"],
-		$_SESSION["os"],
-		$_SESSION["login"],
-		$tabstr,
-	);
-	mysqli_query($base, $request);
-	dbDisconnect($base);
-}
 
 function traiteStringToBDD($str)
 {
