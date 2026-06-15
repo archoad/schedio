@@ -515,14 +515,11 @@ function footPage($link = "", $msg = "")
 	}
 }
 
-function validForms($msg, $url, $back = true)
+function validForms($msg, $url, $back = true, $csrfAction = "default")
 {
-	if (isset($_SESSION["token"])) {
-		unset($_SESSION["token"]);
-	}
-	$_SESSION["token"] = generateToken();
 	printf("<fieldset><legend>Validation</legend>");
 	printf("<table><tr><td>");
+	csrfInput($csrfAction);
 	printf("<input type='submit' value='%s'>", $msg);
 	if ($back) {
 		printf("<input type='reset' value='Effacer'>");
@@ -535,7 +532,7 @@ function validForms($msg, $url, $back = true)
 	printf(
 		"<a class='valid' href='%s?action=%s'>Revenir</a>",
 		$_SESSION["curr_script"],
-		$action,
+		$action
 	);
 	printf("</td></tr></table></fieldset>");
 }
@@ -605,6 +602,69 @@ function generateToken()
 	return $token;
 }
 
+function getCsrfToken($action = "default")
+{
+	if (
+		!isset($_SESSION["csrf_tokens"]) ||
+		!is_array($_SESSION["csrf_tokens"])
+	) {
+		$_SESSION["csrf_tokens"] = [];
+	}
+	if (
+		!isset($_SESSION["csrf_tokens"][$action]) ||
+		!is_string($_SESSION["csrf_tokens"][$action])
+	) {
+		$_SESSION["csrf_tokens"][$action] = generateToken();
+	}
+	return $_SESSION["csrf_tokens"][$action];
+}
+
+function csrfInput($action = "default")
+{
+	$token = getCsrfToken($action);
+	printf(
+		"<input type='hidden' name='csrf_token' value='%s'>\n",
+		htmlspecialchars($token, ENT_QUOTES, "UTF-8")
+	);
+}
+
+
+function isCsrfValid($action = "default")
+{
+	if ($_SERVER["REQUEST_METHOD"] !== "POST") {
+		return false;
+	}
+	if (
+		!isset($_SESSION["csrf_tokens"]) ||
+		!isset($_SESSION["csrf_tokens"][$action]) ||
+		!isset($_POST["csrf_token"])
+	) {
+		return false;
+	}
+	$expected = $_SESSION["csrf_tokens"][$action];
+	$provided = $_POST["csrf_token"];
+	if (!is_string($expected) || !is_string($provided)) {
+		return false;
+	}
+	$valid = hash_equals($expected, $provided);
+	if ($valid) {
+		unset($_SESSION["csrf_tokens"][$action]);
+	}
+	return $valid;
+}
+
+function clearCsrfToken($action = null)
+{
+	if (!isset($_SESSION["csrf_tokens"])) {
+		return;
+	}
+	if ($action === null) {
+		unset($_SESSION["csrf_tokens"]);
+		return;
+	}
+	unset($_SESSION["csrf_tokens"][$action]);
+}
+
 function getCredentialFromDb()
 {
 	$base = dbConnect();
@@ -666,7 +726,7 @@ function changePassword()
 		);
 		printf("</td></tr>\n</table>\n");
 		printf("</fieldset>\n");
-		validForms("Enregistrer", $script);
+		validForms("Enregistrer", $script, true, "chg_password");
 		printf("</form>\n");
 		printf(
 			"<script nonce='%s'>document.getElementById('new1').addEventListener('change', function() {validatePattern();});</script>\n",
@@ -692,15 +752,13 @@ function recordNewPassword($passwd)
 		$passwd,
 		$_SESSION["login"],
 	);
-	if (isset($_SESSION["token"])) {
-		unset($_SESSION["token"]);
-		if (mysqli_query($base, $request)) {
-			dbDisconnect($base);
-			return true;
-		} else {
-			dbDisconnect($base);
-			return false;
-		}
+	if (!isCsrfValid("chg_password")) {
+		dbDisconnect($base);
+		return false;
+	}
+	if (mysqli_query($base, $request)) {
+		dbDisconnect($base);
+		return true;
 	} else {
 		dbDisconnect($base);
 		return false;

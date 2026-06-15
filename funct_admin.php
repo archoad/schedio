@@ -71,7 +71,7 @@ function createUser() {
 	printf("<input type='text' size='50' maxlength='50' name='login' id='login' placeholder='Identifiant (prenom.nom)' autocomplete='username' required>\n");
 	printf("<input type='password' size='20' maxlength='20' name='passwd' id='passwd' placeholder='Mot de passe' autocomplete='current-password' required>\n");
 	printf("</td></tr>\n</table>\n</fieldset>\n");
-	validForms('Enregistrer', 'admin.php');
+	validForms('Enregistrer', 'admin.php', true, 'record_user');
 	printf("</form>\n");
 	dbDisconnect($base);
 }
@@ -92,7 +92,7 @@ function selectUserModif() {
 	}
 	printf("</select>\n");
 	printf("</td>\n</tr>\n</table>\n</fieldset>\n");
-	validForms('Modifier', 'admin.php', $back=False);
+	validForms('Modifier', 'admin.php', $back=False, 'select_user_modif');
 	printf("</form>\n");
 }
 
@@ -120,7 +120,7 @@ function modifUser() {
 	printf("</td></tr>\n<tr><td colspan='3'>\n");
 	printf("Identifiant&nbsp;<input type='text' size='50' maxlength='50' name='login' id='login' value='%s' required>\n", traiteStringFromBDD($record->login));
 	printf("</td></tr>\n</table>\n</fieldset>\n");
-	validForms('Modifier', 'admin.php', $back=False);
+	validForms('Modifier', 'admin.php', $back=False, 'update_user');
 	printf("</form>\n");
 	dbDisconnect($base);
 }
@@ -128,44 +128,57 @@ function modifUser() {
 
 function recordUser($action) {
 	genSyslog(__FUNCTION__);
-	$base = dbConnect();
+	switch ($action) {
+		case 'add':
+			$csrfAction = 'record_user';
+			break;
+		case 'update':
+			$csrfAction = 'update_user';
+			break;
+		default:
+			return false;
+	}
+	if (!isCsrfValid($csrfAction)) {
+		return false;
+	}
 	$prenom = isset($_POST['prenom']) ? traiteStringToBDD($_POST['prenom']) : NULL;
 	$nom = isset($_POST['nom']) ? traiteStringToBDD($_POST['nom']) : NULL;
 	$role = isset($_POST['role']) ? intval(trim($_POST['role'])) : NULL;
 	$login = isset($_POST['login']) ? traiteStringToBDD($_POST['login']) : NULL;
-	if ($role === 1) { return false; }
+	if (
+		$prenom === NULL || $nom === NULL || $role === NULL || $login === NULL || $role === 1
+	) {
+		return false;
+	}
+	$base = dbConnect();
 	switch ($action) {
 		case 'add':
-			$passwd = isset($_POST['passwd']) ?  traiteStringToBDD($_POST['passwd']) : NULL;
+			if (empty($_POST['passwd'])) {
+				dbDisconnect($base);
+				return false;
+			}
+			$passwd = traiteStringToBDD($_POST['passwd']);
 			$passwd = password_hash($passwd, PASSWORD_BCRYPT);
 			$request = sprintf("INSERT INTO users (prenom, nom, role, login, password) VALUES ('%s', '%s', '%d', '%s', '%s')", $prenom, $nom, $role, $login, $passwd);
 			break;
 		case 'update':
+			if (!isset($_SESSION['current_user'])) {
+				dbDisconnect($base);
+				return false;
+			}
 			$id = intval($_SESSION['current_user']);
 			$request = sprintf("UPDATE users SET prenom='%s', nom='%s', role='%d', login='%s' WHERE id='%d'", $prenom, $nom, $role, $login, $id);
 			break;
 	}
-	if (isset($_SESSION['token'])) {
-		unset($_SESSION['token']);
-		if (mysqli_query($base, $request)) {
-			switch ($action) {
-				case 'add':
-					dbDisconnect($base);
-					return true;
-					break;
-				case 'update':
-					unset($_SESSION['current_user']);
-					dbDisconnect($base);
-					return true;
-					break;
-			}
-		} else {
-			dbDisconnect($base);
-			return false;
+	if (mysqli_query($base, $request)) {
+		if ($action === 'update') {
+			unset($_SESSION['current_user']);
 		}
-	} else {
-		return false;
+		dbDisconnect($base);
+		return true;
 	}
+	dbDisconnect($base);
+	return false;
 }
 
 

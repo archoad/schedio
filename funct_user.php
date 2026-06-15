@@ -166,7 +166,7 @@ function createProject() {
 	printf("<td>Date de début:&nbsp;<input type='date' name='datedebut' id='datedebut' min='%s' required></td>\n", date('Y-m-d', time()));
 	printf("<td>Date de fin:&nbsp;<input type='date' name='datefin' id='datefin' min='%s' required></td>\n", date('Y-m-d', time()));
 	printf("</tr>\n</table>\n</fieldset>\n");
-	validForms('Enregistrer', 'user.php');
+	validForms('Enregistrer', 'user.php', true, 'record_project');
 	printf("</form>\n");
 	dbDisconnect($base);
 	printf("<script nonce='%s'>document.getElementById('datedebut').addEventListener('change', function() {fixMinDate();});</script>\n", $_SESSION['nonce']);
@@ -189,7 +189,7 @@ function selectProjectModif() {
 	}
 	printf("</select>\n");
 	printf("</td>\n</tr>\n</table>\n</fieldset>\n");
-	validForms('Modifier', 'user.php', $back=False);
+	validForms('Modifier', 'user.php', $back=False, 'select_project_modif');
 	printf("</form>\n");
 }
 
@@ -225,7 +225,7 @@ function modifProject() {
 	printf("<td>Date de début:&nbsp;<input type='date' name='datedebut' id='datedebut' min='%s' value='%s' required></td>\n", $record->datedebut, $record->datedebut);
 	printf("<td>Date de fin:&nbsp;<input type='date' name='datefin' id='datefin' min='%s' value='%s' required></td>\n", $record->datedebut, $record->datefin);
 	printf("</tr>\n</table>\n</fieldset>\n");
-	validForms('Modifier', 'user.php', $back=False);
+	validForms('Modifier', 'user.php', $back=False, 'update_project');
 	printf("</form>\n");
 	dbDisconnect($base);
 	printf("<script nonce='%s'>document.getElementById('datedebut').addEventListener('change', function() {fixMinDate();});</script>\n", $_SESSION['nonce']);
@@ -234,118 +234,204 @@ function modifProject() {
 
 function recordProject($action) {
 	genSyslog(__FUNCTION__);
-	$base = dbConnect();
-	$nom = isset($_POST['nom']) ? traiteStringToBDD($_POST['nom']) : NULL;
-	$description = isset($_POST['description']) ? traiteStringToBDD($_POST['description']) : NULL;
-	$chapter = isset($_POST['chapter']) ? intval(trim($_POST['chapter'])) : NULL;
-	$directeur = intval($_SESSION['uid']);
-	$chef = isset($_POST['chef']) ? intval(trim($_POST['chef'])) : NULL;
-	$datedebut = isset($_POST['datedebut']) ? $_POST['datedebut'] : NULL;
-	$datefin = isset($_POST['datefin']) ? $_POST['datefin'] : NULL;
 	switch ($action) {
 		case 'add':
-			if (intval($_SESSION['role']) !== 2) { return false; }
+			$csrfAction = 'record_project';
+			break;
+		case 'update':
+			$csrfAction = 'update_project';
+			break;
+		case 'close':
+			$csrfAction = 'complete_project';
+			break;
+		default:
+			return false;
+	}
+	if (!isCsrfValid($csrfAction)) {
+		return false;
+	}
+	$base = dbConnect();
+	switch ($action) {
+		case 'add':
+			if (intval($_SESSION['role']) !== 2) {
+				dbDisconnect($base);
+				return false;
+			}
+			$nom = isset($_POST['nom']) ? traiteStringToBDD($_POST['nom']) : NULL;
+			$description = isset($_POST['description']) ? traiteStringToBDD($_POST['description']) : NULL;
+			$chapter = isset($_POST['chapter']) ? intval(trim($_POST['chapter'])) : NULL;
+			$directeur = intval($_SESSION['uid']);
+			$chef = isset($_POST['chef']) ? intval(trim($_POST['chef'])) : NULL;
+			$datedebut = isset($_POST['datedebut']) ? $_POST['datedebut'] : NULL;
+			$datefin = isset($_POST['datefin']) ? $_POST['datefin'] : NULL;
+			$dateDebutObj = DateTime::createFromFormat('Y-m-d', $datedebut);
+			$dateFinObj = DateTime::createFromFormat('Y-m-d', $datefin);
+			if ( empty($nom) || empty($description) || $chapter <= 0 || $chef <= 0 || !$dateDebutObj || $dateDebutObj->format('Y-m-d') !== $datedebut || !$dateFinObj || $dateFinObj->format('Y-m-d') !== $datefin || $datefin < $datedebut ) {
+				dbDisconnect($base);
+				return false;
+			}
 			$request = sprintf("INSERT INTO project (nom, description, chapter, directeur, chef, datedebut, datefin) VALUES ('%s', '%s', '%d', '%d', '%d', '%s', '%s')", $nom, $description, $chapter, $directeur, $chef, $datedebut, $datefin);
 			break;
 		case 'update':
+			if (!isset($_SESSION['current_project'])) {
+				dbDisconnect($base);
+				return false;
+			}
 			$id = intval($_SESSION['current_project']);
-			if (!canEditProject($id)) { return false; }
+			if (!canEditProject($id)) {
+				dbDisconnect($base);
+				return false;
+			}
+			if (!isset($_SESSION['current_project'])) {
+				dbDisconnect($base);
+				return false;
+			}
+			$nom = isset($_POST['nom']) ? traiteStringToBDD($_POST['nom']) : NULL;
+			$description = isset($_POST['description']) ? traiteStringToBDD($_POST['description']) : NULL;
+			$chapter = isset($_POST['chapter']) ? intval(trim($_POST['chapter'])) : 0;
+			$directeur = intval($_SESSION['uid']);
+			$chef = isset($_POST['chef']) ? intval(trim($_POST['chef'])) : 0;
+			$datedebut = isset($_POST['datedebut']) ? trim($_POST['datedebut']) : '';
+			$datefin = isset($_POST['datefin']) ? trim($_POST['datefin']) : '';
+			$dateDebutObj = DateTime::createFromFormat('Y-m-d', $datedebut);
+			$dateFinObj = DateTime::createFromFormat('Y-m-d', $datefin);
+			if ( empty($nom) || empty($description) || $chapter <= 0 || $chef <= 0 || !$dateDebutObj || $dateDebutObj->format('Y-m-d') !== $datedebut || !$dateFinObj || $dateFinObj->format('Y-m-d') !== $datefin || $datefin < $datedebut ) {
+				dbDisconnect($base);
+				return false;
+			}
 			$request = sprintf("UPDATE project SET nom='%s', description='%s', chapter='%d', directeur='%d', chef='%d', datedebut='%s', datefin='%s' WHERE id='%d'", $nom, $description, $chapter, $directeur, $chef, $datedebut, $datefin, $id);
 			break;
 		case 'close':
-			$id = isset($_GET['value']) ? intval($_GET['value']) : 0;
-			if (!canCloseProject($id)) { return false; }
+			$id = isset($_POST['project_id']) ? intval($_POST['project_id']) : 0;
+			if (!canCloseProject($id)) {
+				dbDisconnect($base);
+				return false;
+			}
 			$request = sprintf("UPDATE project SET complete='1' WHERE id='%d'", $id);
 			break;
 		default:
 			return false;
 	}
-	if (isset($_SESSION['token'])) {
-		unset($_SESSION['token']);
-		if (mysqli_query($base, $request)) {
-			switch ($action) {
-				case 'add':
-				case 'close':
-					dbDisconnect($base);
-					return true;
-					break;
-				case 'update':
-					unset($_SESSION['current_project']);
-					dbDisconnect($base);
-					return true;
-					break;
-			}
-		} else {
-			dbDisconnect($base);
-			return false;
+	if (mysqli_query($base, $request)) {
+		if ($action === 'update') {
+			unset($_SESSION['current_project']);
 		}
-	} else {
-		return false;
+		dbDisconnect($base);
+		return true;
 	}
+	dbDisconnect($base);
+	return false;
 }
 
 
-function displayProjects() {
+function displayProjects()
+{
 	$base = dbConnect();
+
 	switch (intval($_SESSION['role'])) {
 		case 2: // Directeur de projet
-			$request = sprintf("SELECT * FROM project WHERE directeur='%d' ORDER BY chapter ASC, complete ASC, datedebut ASC", intval($_SESSION['uid']));
+			$request = sprintf(
+				"SELECT * FROM project WHERE directeur='%d' ORDER BY chapter ASC, complete ASC, datedebut ASC",
+				intval($_SESSION['uid'])
+			);
 			break;
+
 		case 4: // Manager
-			$request = sprintf("SELECT * FROM project ORDER BY chapter ASC, complete ASC, datedebut ASC");
+			$request = "SELECT * FROM project ORDER BY chapter ASC, complete ASC, datedebut ASC";
 			break;
+
 		default: // Chef de projet
-			$request = sprintf("SELECT * FROM project WHERE chef='%d' ORDER BY chapter ASC, complete ASC, datedebut ASC", intval($_SESSION['uid']));
+			$request = sprintf(
+				"SELECT * FROM project WHERE chef='%d' ORDER BY chapter ASC, complete ASC, datedebut ASC",
+				intval($_SESSION['uid'])
+			);
 			break;
 	}
+
 	$result = mysqli_query($base, $request);
 	dbDisconnect($base);
+
 	$chapterRef = 0;
+	$openTable = false;
+
 	printf("<div class='project'>\n");
-	while($row = mysqli_fetch_object($result)) {
+
+	while ($row = mysqli_fetch_object($result)) {
 		$closed = isProjectClosed($row->id);
-		if (!$closed) {
-			if (intval($row->chapter) <> $chapterRef) {
-				if ($chapterRef<>0) { printf("</table>\n"); }
-				printf("<h3>%s</h3>", getChapter($row->chapter));
-				printf("<table>\n<tr><th>Nom</th><th>Directeur de projet</th><th>Chef de projet</th><th>Date de début</th><th>date de fin</th><th>Avancement</th>");
-				if (in_array($_SESSION['role'], array('2', '4'))) {
-					printf("<th>Etat</th>");
-				}
-				printf("</tr>");
-				$chapterRef = intval($row->chapter);
+
+		if (intval($row->chapter) !== $chapterRef) {
+			if ($openTable) {
+				printf("</table>\n");
 			}
-			printf("<tr>\n");
-			printf("<td><a href='user.php?action=mgmt&value=%d'>%s</a></td>", $row->id, traiteStringFromBDD($row->nom));
-			printf("<td>%s</td>", getUser($row->directeur));
-			printf("<td>%s</td>", getUser($row->chef));
-			printf("<td>%s</td>", displayShortDate($row->datedebut));
-			printf("<td>%s</td>", displayShortDate($row->datefin));
-			if ((intval($_SESSION['role']) == 3) and (intval($row->complete))) {
-				printf("<td><div class='finished'>Projet clos</div></td>");
-			} else {
-				printf("<td>%s</td>", projectProgressBar($row->id));
-			}
+
+			printf("<h3>%s</h3>\n", getChapter($row->chapter));
+			printf("<table>\n");
+			printf(
+				"<tr><th>Nom</th><th>Directeur de projet</th><th>Chef de projet</th><th>Date de début</th><th>Date de fin</th><th>Avancement</th>"
+			);
+
 			if (in_array($_SESSION['role'], array('2', '4'))) {
-				if (computeProjectProgress($row->id) == 100) {
-					if (intval($row->complete)) {
-						printf("<td><span class='finished'>Clos</span></td>");
-					} else {
-						if (intval($_SESSION['role']) == 2) {
-							printf("<td><a class='complete' href='user.php?action=complete&value=%d'>Clore</a></td>", $row->id);
-						}
-						if (intval($_SESSION['role']) == 4) {
-							printf("<td><span class='complete'>A clore</span></td>", $row->id);
-						}
-					}
-				} else {
-					printf("<td><span class='live'>Actif</span></td>");
-				}
+				printf("<th>Etat</th>");
 			}
+
 			printf("</tr>\n");
+
+			$chapterRef = intval($row->chapter);
+			$openTable = true;
 		}
+
+		printf("<tr>\n");
+
+		printf(
+			"<td><a href='user.php?action=mgmt&value=%d'>%s</a></td>\n",
+			intval($row->id),
+			traiteStringFromBDD($row->nom)
+		);
+
+		printf("<td>%s</td>\n", getUser($row->directeur));
+		printf("<td>%s</td>\n", getUser($row->chef));
+		printf("<td>%s</td>\n", displayShortDate($row->datedebut));
+		printf("<td>%s</td>\n", displayShortDate($row->datefin));
+
+		if ($closed) {
+			printf("<td><div class='finished'>Projet clos</div></td>\n");
+		} else {
+			printf("<td>%s</td>\n", projectProgressBar($row->id));
+		}
+
+		if (in_array($_SESSION['role'], array('2', '4'))) {
+			if ($closed) {
+				printf("<td><span class='finished'>Clos</span></td>\n");
+			} elseif (computeProjectProgress($row->id) == 100) {
+				if (intval($_SESSION['role']) === 2) {
+					printf("<td>");
+					printf("<form method='post' action='user.php?action=complete'>\n");
+					csrfInput('complete_project');
+					printf(
+						"<input type='hidden' name='project_id' value='%d'>\n",
+						intval($row->id)
+					);
+					printf("<input class='complete' type='submit' value='Clore'>\n");
+					printf("</form>\n");
+					printf("</td>\n");
+				} else {
+					printf("<td><span class='complete'>A clore</span></td>\n");
+				}
+			} else {
+				printf("<td><span class='live'>Actif</span></td>\n");
+			}
+		}
+
+		printf("</tr>\n");
 	}
-	printf("</table>\n</div>");
+
+	if ($openTable) {
+		printf("</table>\n");
+	} else {
+		printf("<table><tr><td>Aucun projet à afficher.</td></tr></table>\n");
+	}
+
+	printf("</div>\n");
 }
 
 
@@ -385,7 +471,6 @@ function displayProjectHead() {
 
 
 function addTask() {
-	$_SESSION['token'] = generateToken();
 	$base = dbConnect();
 	$request = sprintf("SELECT * FROM project WHERE id='%d' LIMIT 1", intval($_SESSION['project']));
 	$result = mysqli_query($base, $request);
@@ -396,6 +481,7 @@ function addTask() {
 	if ($interval->invert) {
 		printf("<div class='task'>\n");
 		printf("<form method='post' id='new_task' action='user.php?action=record_task'>\n");
+		csrfInput("record_task");
 		printf("<table>\n<tr>\n");
 		printf("<td><input type='text' size='40' maxlength='60' name='nom' id='nom' placeholder='Tâche' required></td>\n");
 		printf("<td>De&nbsp;<input type='date' name='datedebut' id='datedebut' min='%s' max='%s' required></td>\n", $record->datedebut, $record->datefin);
@@ -414,33 +500,68 @@ function addTask() {
 
 function displayTasks($data) {
 	$closed = isProjectClosed(intval($_SESSION['project']));
+
 	printf("<div class='project'>\n");
 	printf("<table>\n");
 	printf("<tr>\n<th>Tâche</th><th>Début</th><th>Fin</th><th>Durée</th><th>Actions</th><th>Avancement</th></tr>\n");
+
 	while($row = mysqli_fetch_object($data)) {
 		printf("<tr>\n");
+
 		printf("<td>%s</td>\n", traiteStringFromBDD($row->nom));
 		printf("<td>%s</td>\n", displayDate($row->datedebut));
 		printf("<td>%s</td>\n", displayDate($row->datefin));
 		printf("<td>%s</td>\n", computeDuration($row->datedebut, $row->datefin));
+
 		if ($closed) {
 			printf("<td>&nbsp;</td>\n");
 		} elseif (intval($_SESSION['role']) == 4) {
-			printf("<td class='center'><a class='action_plus' href='user.php?action=read_actions&value=%d'>&rarrb;</a></td>\n", $row->id);
+			printf(
+				"<td class='center'><a class='action_plus' href='user.php?action=read_actions&value=%d'>&rarrb;</a></td>\n",
+				intval($row->id)
+			);
 		} else {
-			printf("<td class='center'><a class='action_plus' href='user.php?action=actions&value=%d'>+</a></td>\n", $row->id);
+			printf(
+				"<td class='center'><a class='action_plus' href='user.php?action=actions&value=%d'>+</a></td>\n",
+				intval($row->id)
+			);
 		}
+
 		printf("<td><div class='tableauto'>");
+
 		if ((!$closed) and (intval($_SESSION['role']) != 4)) {
-			printf("<div class='tablecell'><a class='project_minus' href='user.php?action=task_decrease&value=%d'>-</a></div>", $row->id);
+			printf("<div class='tablecell'>");
+			printf("<form method='post' action='user.php?action=task_decrease'>\n");
+			csrfInput("task_decrease");
+			printf(
+				"<input type='hidden' name='task_id' value='%d'>\n",
+				intval($row->id)
+			);
+			printf("<input class='project_minus' type='submit' value='-'>\n");
+			printf("</form>");
+			printf("</div>");
 		}
+
 		printf("<div class='tablecell'>%s</div>", taskProgressBar($row->id));
+
 		if ((!$closed) and (intval($_SESSION['role']) != 4)) {
-			printf("<div class='tablecell'><a class='project_plus' href='user.php?action=task_increase&value=%d'>+</a></div>", $row->id);
+			printf("<div class='tablecell'>");
+			printf("<form method='post' action='user.php?action=task_increase'>\n");
+			csrfInput("task_increase");
+			printf(
+				"<input type='hidden' name='task_id' value='%d'>\n",
+				intval($row->id)
+			);
+			printf("<input class='project_plus' type='submit' value='+'>\n");
+			printf("</form>");
+			printf("</div>");
 		}
+
 		printf("</div></td>\n");
+
 		printf("</tr>\n");
 	}
+
 	printf("</table>\n</div>\n");
 }
 
@@ -476,22 +597,24 @@ function projectDetail() {
 
 function recordNewTask() {
 	$base = dbConnect();
+	if (!isCsrfValid("record_task")) {
+		dbDisconnect($base);
+		return false;
+	}
 	$projet = intval($_SESSION['project']);
-	if (!canManageProjectTasks($projet)) { return false; }
+	if (!canManageProjectTasks($projet)) {
+		dbDisconnect($base);
+		return false;
+	}
 	$nom = isset($_POST['nom']) ? traiteStringToBDD($_POST['nom']) : NULL;
 	$datedebut = isset($_POST['datedebut']) ? $_POST['datedebut'] : NULL;
 	$datefin = isset($_POST['datefin']) ? $_POST['datefin'] : NULL;
 	$request = sprintf("INSERT INTO task (projet, nom, datedebut, datefin, avancement) VALUES ('%d', '%s', '%s', '%s', '0')", $projet, $nom, $datedebut, $datefin);
-	if (isset($_SESSION['token'])) {
-		unset($_SESSION['token']);
-		if (mysqli_query($base, $request)) {
-			dbDisconnect($base);
-			return true;
-		} else {
-			dbDisconnect($base);
-			return false;
-		}
+	if (mysqli_query($base, $request)) {
+		dbDisconnect($base);
+		return true;
 	} else {
+		dbDisconnect($base);
 		return false;
 	}
 }
@@ -499,7 +622,12 @@ function recordNewTask() {
 
 function incrDecrTask($action) {
 	$base = dbConnect();
-	$id = intval($_GET['value']);
+	$id = isset($_POST['task_id']) ? intval($_POST['task_id']) : 0;
+	$csrfAction = ($action === "increase") ? "task_increase" : "task_decrease";
+	if (!isCsrfValid($csrfAction)) {
+		dbDisconnect($base);
+		return false;
+	}
 	if (!canEditTask($id)) {
 		dbDisconnect($base);
 		return false;
@@ -573,6 +701,7 @@ function actionsManagement() {
 	if ($handle = fopen($fileName, "a+")) {
 		printf("<div class='project'>\n");
 		printf("<form method='post' id='new_action' action='user.php?action=record_action'>\n");
+		csrfInput("record_action");
 		printf("<table>\n<tr>\n");
 		if (filesize($fileName)) {
 			$data = fread($handle, filesize($fileName));
@@ -610,7 +739,12 @@ function displayActions() {
 
 
 function recordAction() {
-	if (!isset($_SESSION['task']) || !canEditTask($_SESSION['task'])) { return false; }
+	if (!isCsrfValid("record_action")) {
+		return false;
+	}
+	if (!isset($_SESSION['task']) || !canEditTask($_SESSION['task'])) {
+		return false;
+	}
 	$fileName = getActionFilename();
 	if ($handle = fopen($fileName, "w")) {
 		fwrite($handle, $_POST['description']);
@@ -655,9 +789,8 @@ function displayKanbanTask($id) {
 function delKanban() {
 	printf("<div id='del_kanban_form' class='modal'>");
 	printf("<div class='modal_content'>");
-	if (isset($_SESSION['token'])) { unset($_SESSION['token']); }
-	$_SESSION['token'] = generateToken();
 	printf("<form method='post' id='del_kanban' action='user.php?action=del_kanban'>\n");
+	csrfInput("del_kanban");
 	printf("<fieldset>\n<legend>Voulez-vous supprimer la tâche?</legend>\n");
 	printf("<input type='hidden' name='delid' id='delid' value='0' />\n");
 	printf("<table><tr><td>\n");
@@ -687,7 +820,7 @@ function addKanban() {
 	}
 	printf("</select>\n</td>");
 	printf("</tr>\n</table>\n</fieldset>\n");
-	validForms('Enregistrer', 'kanban');
+	validForms('Enregistrer', 'kanban', true, 'add_kanban');
 	printf("</form>\n");
 	printf("</div></div>");
 }
@@ -712,7 +845,7 @@ function modifyKanban() {
 	}
 	printf("</select>\n</td>");
 	printf("</tr>\n</table>\n</fieldset>\n");
-	validForms('Enregistrer', 'kanban');
+	validForms('Enregistrer', 'kanban', true, 'modify_kanban');
 	printf("</form>\n");
 	printf("</div></div>");
 }
@@ -747,13 +880,46 @@ function displayKanban() {
 	addKanban();
 	modifyKanban();
 	delKanban();
+	printf("<script nonce='%s'>window.schedioCsrfUpdateKanban = '%s';</script>\n", $_SESSION['nonce'], getCsrfToken("update_kanban"));
 	printf("<script nonce='%s' src='js/dragdrop.js'></script>\n", $_SESSION['nonce']);
 	printf("<script nonce='%s'>document.getElementById('addkanban').addEventListener('click', function() {displayAddModal();});</script>\n", $_SESSION['nonce']);
 }
 
 
-function recordKanban($action) {
-	$base = dbConnect();
+function recordKanban($action)
+{
+	genSyslog(__FUNCTION__);
+
+	switch ($action) {
+		case 'add':
+			$csrfAction = 'add_kanban';
+			break;
+
+		case 'update':
+			$csrfAction = 'update_kanban';
+			break;
+
+		case 'modify':
+			$csrfAction = 'modify_kanban';
+			break;
+
+		case 'delete':
+			$csrfAction = 'del_kanban';
+			break;
+
+		default:
+			return false;
+	}
+
+	if (!isCsrfValid($csrfAction)) {
+		return false;
+	}
+
+	$isValidDate = function ($date) {
+		$dateObj = DateTime::createFromFormat('Y-m-d', $date);
+		return $dateObj && $dateObj->format('Y-m-d') === $date;
+	};
+
 	switch ($action) {
 		case 'add':
 			$user = intval($_SESSION['uid']);
@@ -761,54 +927,125 @@ function recordKanban($action) {
 			$nom = isset($_POST['nom']) ? traiteStringToBDD($_POST['nom']) : NULL;
 			$description = isset($_POST['description']) ? traiteStringToBDD($_POST['description']) : NULL;
 			$datedebut = date('Y-m-d', time());
-			$datefin = isset($_POST['datefin']) ? $_POST['datefin'] : NULL;
-			$priority = isset($_POST['priority']) ? intval($_POST['priority']) : NULL;
-			$request = sprintf("INSERT INTO kanban (user, progress, nom, description, datedebut, datefin, priority) VALUES ('%d', '%d', '%s', '%s', '%s', '%s', '%d')", $user, $progress, $nom, $description, $datedebut, $datefin, $priority);
+			$datefin = isset($_POST['datefin']) ? trim($_POST['datefin']) : '';
+			$priority = isset($_POST['priority']) ? intval($_POST['priority']) : 0;
+
+			if (
+				empty($nom) ||
+				empty($description) ||
+				!$isValidDate($datefin) ||
+				$datefin < $datedebut ||
+				$priority < 1 ||
+				$priority > 5
+			) {
+				return false;
+			}
+
+			$base = dbConnect();
+
+			$request = sprintf(
+				"INSERT INTO kanban (user, progress, nom, description, datedebut, datefin, priority) VALUES ('%d', '%d', '%s', '%s', '%s', '%s', '%d')",
+				$user,
+				$progress,
+				$nom,
+				$description,
+				$datedebut,
+				$datefin,
+				$priority
+			);
 			break;
+
 		case 'update':
-			$id = isset($_GET['task']) ? intval($_GET['task']) : 0;
-			if (!canEditKanban($id)) {
+			$id = isset($_POST['task_id']) ? intval($_POST['task_id']) : 0;
+			$progressName = isset($_POST['progress']) ? traiteStringToBDD($_POST['progress']) : NULL;
+
+			if (
+				$id <= 0 ||
+				empty($progressName) ||
+				!canEditKanban($id)
+			) {
+				return false;
+			}
+
+			$base = dbConnect();
+
+			$request = sprintf(
+				"SELECT id FROM progress WHERE nom='%s' LIMIT 1",
+				$progressName
+			);
+			$result = mysqli_query($base, $request);
+
+			if (!$result || !mysqli_num_rows($result)) {
 				dbDisconnect($base);
 				return false;
 			}
-			$request = sprintf("SELECT id FROM progress WHERE nom='%s' LIMIT 1", $_GET['progress']);
-			$result = mysqli_query($base, $request);
+
 			$record = mysqli_fetch_object($result);
-			$request = sprintf("UPDATE kanban SET progress='%d' WHERE id='%d'", $record->id, $id);
+
+			$request = sprintf(
+				"UPDATE kanban SET progress='%d' WHERE id='%d'",
+				intval($record->id),
+				$id
+			);
 			break;
+
 		case 'modify':
 			$id = isset($_POST['uid']) ? intval($_POST['uid']) : 0;
-			if (!canEditKanban($id)) {
-				dbDisconnect($base);
-				return false;
-			}
 			$nom = isset($_POST['unom']) ? traiteStringToBDD($_POST['unom']) : NULL;
 			$description = isset($_POST['udescription']) ? traiteStringToBDD($_POST['udescription']) : NULL;
-			$datefin = isset($_POST['udatefin']) ? $_POST['udatefin'] : NULL;
-			$priority = isset($_POST['upriority']) ? intval($_POST['upriority']) : NULL;
-			$request = sprintf("UPDATE kanban SET nom='%s', description='%s', datefin='%s', priority='%d' WHERE id='%d'", $nom, $description, $datefin, $priority, $id);
-			break;
-		case 'delete':
-			$id = isset($_POST['delid']) ? intval($_POST['delid']) : 0;
-			if (!canEditKanban($id)) {
-				dbDisconnect($base);
+			$datefin = isset($_POST['udatefin']) ? trim($_POST['udatefin']) : '';
+			$priority = isset($_POST['upriority']) ? intval($_POST['upriority']) : 0;
+
+			if (
+				$id <= 0 ||
+				empty($nom) ||
+				empty($description) ||
+				!$isValidDate($datefin) ||
+				$priority < 1 ||
+				$priority > 5 ||
+				!canEditKanban($id)
+			) {
 				return false;
 			}
-			$request = sprintf("DELETE FROM kanban WHERE id='%d'", $id);
+
+			$base = dbConnect();
+
+			$request = sprintf(
+				"UPDATE kanban SET nom='%s', description='%s', datefin='%s', priority='%d' WHERE id='%d'",
+				$nom,
+				$description,
+				$datefin,
+				$priority,
+				$id
+			);
+			break;
+
+		case 'delete':
+			$id = isset($_POST['delid']) ? intval($_POST['delid']) : 0;
+
+			if (
+				$id <= 0 ||
+				!canEditKanban($id)
+			) {
+				return false;
+			}
+
+			$base = dbConnect();
+
+			$request = sprintf(
+				"DELETE FROM kanban WHERE id='%d'",
+				$id
+			);
 			break;
 	}
-	if (isset($_SESSION['token'])) {
-		unset($_SESSION['token']);
-		if (mysqli_query($base, $request)) {
-			dbDisconnect($base);
-			return true;
-		} else {
-			dbDisconnect($base);
-			return false;
-		}
-	} else {
-		return false;
+
+	if (mysqli_query($base, $request)) {
+		dbDisconnect($base);
+		return true;
 	}
+
+	dbDisconnect($base);
+	return false;
 }
 
 

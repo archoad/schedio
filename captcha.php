@@ -34,30 +34,16 @@ if (isset($_SESSION["sess_captcha"])) {
 $imgWidth = 85;
 $imgHeight = 25;
 
-function generateLines($image, $nbr)
-{
+function generateLines($image, $nbr) {
 	global $imgWidth, $imgHeight;
 	genSyslog(__FUNCTION__);
 	for ($i = 0; $i <= $nbr; $i++) {
-		$lineColor = imagecolorallocate(
-			$image,
-			rand(0, 255),
-			rand(0, 255),
-			rand(0, 255),
-		);
-		imageline(
-			$image,
-			rand(1, $imgWidth - $imgHeight),
-			rand(1, $imgHeight),
-			rand(1, $imgWidth + $imgHeight),
-			rand(1, $imgHeight),
-			$lineColor,
-		);
+		$lineColor = imagecolorallocate($image, rand(0, 255), rand(0, 255), rand(0, 255));
+		imageline($image, rand(1, $imgWidth - $imgHeight), rand(1, $imgHeight), rand(1, $imgWidth + $imgHeight), rand(1, $imgHeight), $lineColor);
 	}
 }
 
-function txtCaptcha($image)
-{
+function txtCaptcha($image) {
 	genSyslog(__FUNCTION__);
 	$captchaString = "ABCDEFGHJKLMNPQRSTUVWXYZ123456789";
 	$captchaString = str_shuffle($captchaString);
@@ -66,8 +52,7 @@ function txtCaptcha($image)
 	imagestring($image, 5, 10, 4, $_SESSION["sess_captcha"], $textColor);
 }
 
-function numCaptcha($image)
-{
+function numCaptcha($image) {
 	genSyslog(__FUNCTION__);
 	$captchaNumber = ["un", "deux", "trois", "quatre", "cinq"];
 	$val1 = rand(1, 5);

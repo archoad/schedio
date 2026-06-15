@@ -55,7 +55,12 @@ if (isset($_GET["action"])) {
 			if (empty($_POST["user"])) {
 				selectUserModif();
 			} else {
-				$_SESSION["current_user"] = $_POST["user"];
+				if (!isCsrfValid("select_user_modif")) {
+					linkMsg($_SESSION["curr_script"], "Jeton CSRF invalide", "alert.png");
+					footPage();
+					break;
+				}
+				$_SESSION["current_user"] = intval($_POST["user"]);
 				modifUser();
 			}
 			footPage();
@@ -116,17 +121,13 @@ if (isset($_GET["action"])) {
 			break;
 
 		case "rm_token":
-			if (isset($_SESSION["token"])) {
-				unset($_SESSION["token"]);
-			}
+			clearCsrfToken();
 			menuAdmin();
 			footPage();
 			break;
 
 		default:
-			if (isset($_SESSION["token"])) {
-				unset($_SESSION["token"]);
-			}
+			clearCsrfToken();
 			menuAdmin();
 			footPage();
 			break;

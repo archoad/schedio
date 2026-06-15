@@ -72,11 +72,16 @@ if (isset($_GET["action"])) {
 			if (empty($_POST["project"])) {
 				selectProjectModif();
 			} else {
+				if ($_SERVER["REQUEST_METHOD"] !== "POST" || !isCsrfValid("select_project_modif")) {
+					linkMsg($_SESSION["curr_script"], "Jeton CSRF invalide", "alert.png");
+					footPage();
+					break;
+				}
 				$projectId = intval($_POST["project"]);
 				if (!canEditProject($projectId)) {
 					denyAccess($_SESSION["curr_script"]);
 				}
-				$_SESSION["current_project"] = $_POST["project"];
+				$_SESSION["current_project"] = $projectId;
 				modifProject();
 			}
 			footPage();
@@ -152,7 +157,7 @@ if (isset($_GET["action"])) {
 			break;
 
 		case "task_increase":
-			if (!isset($_GET["value"]) || !canEditTask($_GET["value"])) {
+			if ($_SERVER["REQUEST_METHOD"] !== "POST" || !isset($_POST["task_id"]) || !canEditTask($_POST["task_id"])) {
 				denyAccess($_SESSION["curr_script"] . "?action=project_mgmt");
 			}
 			if (incrDecrTask("increase")) {
@@ -164,7 +169,7 @@ if (isset($_GET["action"])) {
 			break;
 
 		case "task_decrease":
-			if (!isset($_GET["value"]) || !canEditTask($_GET["value"])) {
+			if ($_SERVER["REQUEST_METHOD"] !== "POST" || !isset($_POST["task_id"]) || !canEditTask($_POST["task_id"])) {
 				denyAccess($_SESSION["curr_script"] . "?action=project_mgmt");
 			}
 			if (incrDecrTask("decrease")) {
@@ -224,11 +229,11 @@ if (isset($_GET["action"])) {
 			break;
 
 		case "complete":
-			if (!isset($_GET["value"])) {
+			if ( $_SERVER["REQUEST_METHOD"] !== "POST" || !isset($_POST["project_id"]) ) {
 				header("Location: " .$_SESSION["curr_script"] ."?action=project_mgmt");
 				break;
 			}
-			$projectId = intval($_GET["value"]);
+			$projectId = intval($_POST["project_id"]);
 			if (!canCloseProject($projectId)) {
 				denyAccess($_SESSION["curr_script"] . "?action=project_mgmt");
 			}
@@ -323,25 +328,19 @@ if (isset($_GET["action"])) {
 			break;
 
 		case "kanban_rm_token":
-			if (isset($_SESSION["token"])) {
-				unset($_SESSION["token"]);
-			}
+			clearCsrfToken();
 			displayKanban();
 			footPage($_SESSION["curr_script"], "Accueil");
 			break;
 
 		case "rm_token":
-			if (isset($_SESSION["token"])) {
-				unset($_SESSION["token"]);
-			}
+			clearCsrfToken();
 			menuUser();
 			footPage();
 			break;
 
 		default:
-			if (isset($_SESSION["token"])) {
-				unset($_SESSION["token"]);
-			}
+			clearCsrfToken();
 			menuUser();
 			footPage();
 	}

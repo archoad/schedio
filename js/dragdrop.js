@@ -28,22 +28,48 @@
 				e.preventDefault();
 				var data = e.dataTransfer.getData('text/plain');
 				var elt = document.getElementById(data);
+				if (!elt) {
+					return;
+				}
 				elt.style.borderStyle = 'solid';
 				elt.style.borderWidth = '1px';
 				var target = e.target;
-				draggedElement = dndHandler.draggedElement;
-				clonedElement = draggedElement.cloneNode(true);
-				while(target.className.indexOf('dropper') == -1) {
+				while (target && !target.classList.contains('dropper')) {
 					target = target.parentNode;
 				}
+				if (!target) {
+					return;
+				}
 				target.classList.remove('drop_hover');
+				var draggedElement = dndHandler.draggedElement;
+				if (!draggedElement) {
+					return;
+				}
+				var clonedElement = draggedElement.cloneNode(true);
 				clonedElement = target.appendChild(clonedElement);
 				dndHandler.applyDragEvents(clonedElement);
 				draggedElement.parentNode.removeChild(draggedElement);
 				var url = window.location.pathname;
-				var filename = url.substring(url.lastIndexOf('/')+1);
-				var new_href=filename+'?action=update_kanban&progress='+target.id+'&task='+data.substring(4);
-				window.location.assign(new_href);
+				var filename = url.substring(url.lastIndexOf('/') + 1);
+				var formData = new FormData();
+				formData.append('task_id', data.substring(4));
+				formData.append('progress', target.id);
+				formData.append('csrf_token', window.schedioCsrfUpdateKanban);
+				fetch(filename + '?action=update_kanban', {
+					method: 'POST',
+					body: formData,
+					credentials: 'same-origin'
+				}).then(function(response) {
+					if (response.ok) {
+						window.location.assign(filename + '?action=kanban');
+					} else {
+						alert('Erreur de mise à jour du Kanban');
+						window.location.assign(filename + '?action=kanban');
+					}
+				}).catch(function() {
+					alert('Erreur réseau lors de la mise à jour du Kanban');
+					window.location.assign(filename + '?action=kanban');
+				});
 			}, false);
 		}
 	};
