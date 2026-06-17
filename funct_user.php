@@ -147,14 +147,14 @@ function createProject() {
 	printf("<td colspan='3'>Chapitre ISO27002:&nbsp;<select name='chapter' id='chapter' required>\n");
 	printf("<option selected='selected' value=''>&nbsp;</option>\n");
 	while($row = mysqli_fetch_object($res_chapter)) {
-		printf("<option value='%d'>%s - %s</option>\n", $row->id, $row->num, $row->nom);
+		printf("<option value='%d'>%s - %s</option>\n", intval($row->id), intval($row->num), traiteStringFromBDD($row->nom));
 	}
 	printf("</select>\n</td>");
 	printf("</tr>\n<tr>\n");
 	printf("<td>Chef de projet:&nbsp;<select name='chef' id='chef' required>\n");
 	printf("<option selected='selected' value=''>&nbsp;</option>\n");
 	while($row = mysqli_fetch_object($res_chefproj)) {
-		printf("<option value='%d'>%s %s</option>\n", $row->id, $row->prenom, $row->nom);
+		printf("<option value='%d'>%s %s</option>\n", intval($row->id), traiteStringFromBDD($row->prenom), traiteStringFromBDD($row->nom));
 	}
 	printf("</select>\n</td>\n");
 	printf("<td>Date de début:&nbsp;<input type='date' name='datedebut' id='datedebut' min='%s' required></td>\n", date('Y-m-d', time()));
@@ -178,7 +178,7 @@ function selectProjectModif() {
 	printf("<option selected='selected' value=''>&nbsp;</option>\n");
 	while($row = mysqli_fetch_object($result)) {
 		if (!intval($row->complete)) {
-			printf("<option value='%s'>%s</option>\n", $row->id, traiteStringFromBDD($row->nom));
+			printf("<option value='%s'>%s</option>\n", intval($row->id), traiteStringFromBDD($row->nom));
 		}
 	}
 	printf("</select>\n");
@@ -201,19 +201,19 @@ function modifProject() {
 	printf("<table>\n<tr>\n");
 	printf("<td colspan='3'><input type='text' size='60' maxlength='60' name='nom' id='nom' value='%s' required>\n</td>", traiteStringFromBDD($record->nom));
 	printf("</tr>\n<tr>\n");
-	printf("<td colspan='3'><textarea name='description' id='description' cols='60' rows='3' required>%s</textarea></td>\n", traiteStringFromBDD($record->description));
+	printf("<td colspan='3'><textarea name='description' id='description' cols='60' rows='3' required>%s</textarea></td>\n", htmlTextarea(traiteStringFromBDD($record->description)));
 	printf("</tr>\n<tr>\n");
 	printf("<td colspan='3'>Chapitre ISO27002:&nbsp;<select name='chapter' id='chapter' required>\n");
 	printf("<option selected='selected' value='%d'>%s</option>\n", intval($record->chapter), getChapter($record->chapter));
 	while($row = mysqli_fetch_object($res_chapter)) {
-		printf("<option value='%d'>%s - %s</option>\n", $row->id, $row->num, $row->nom);
+		printf("<option value='%d'>%s - %s</option>\n", intval($row->id), intval($row->num), traiteStringFromBDD($row->nom));
 	}
 	printf("</select>\n</td>");
 	printf("</tr>\n<tr>\n");
 	printf("<td>Chef de projet:&nbsp;<select name='chef' id='chef' required>\n");
 	printf("<option selected='selected' value='%s'>%s</option>\n", intval($record->chef), getUser($record->chef));
 	while($row = mysqli_fetch_object($res_chefproj)) {
-		printf("<option value='%d'>%s %s</option>\n", $row->id, $row->prenom, $row->nom);
+		printf("<option value='%d'>%s %s</option>\n", intval($row->id), traiteStringFromBDD($row->prenom), traiteStringFromBDD($row->nom));
 	}
 	printf("</select>\n</td>\n");
 	printf("<td>Date de début:&nbsp;<input type='date' name='datedebut' id='datedebut' min='%s' value='%s' required></td>\n", $record->datedebut, $record->datedebut);
@@ -412,7 +412,7 @@ function displayProjectHead() {
 	dbDisconnect($base);
 	printf("<div class='project'>\n<table>\n<tr>\n");
 	printf("<th colspan='2' class='projet_title'>%s</th>\n",  traiteStringFromBDD($record->nom));
-	printf("<th colspan='2' class='projet_detail'>%s</th>\n", traiteStringFromBDD($record->description));
+	printf("<th colspan='2' class='projet_detail'>%s</th>\n", htmlTextarea(traiteStringFromBDD($record->description)));
 	printf("</tr>\n<tr>\n");
 	printf("<th colspan='2'>%s</th>\n",  getChapter($record->chapter));
 	printf("<th colspan='2'>");
@@ -675,7 +675,7 @@ function actionsManagement() {
 		printf("<table>\n<tr>\n");
 		if (filesize($fileName)) {
 			$data = fread($handle, filesize($fileName));
-			printf("<td><div class='actions'><textarea name='description' id='description'>%s</textarea></div></td>\n", $data);
+			printf("<td><div class='actions'><textarea name='description' id='description'>%s</textarea></div></td>\n", htmlTextarea($data));
 		} else {
 			printf("<td><div class='actions'><textarea name='description' id='description'></textarea></div></td>\n");
 		}
@@ -696,7 +696,7 @@ function displayActions() {
 	if ($handle = fopen($fileName, "r")) {
 		if (filesize($fileName)) {
 			$data = fread($handle, filesize($fileName));
-			printf("<textarea name='description' id='description' cols='80' rows='30' readonly>%s</textarea>\n", $data);
+			printf("<textarea name='description' id='description' cols='80' rows='30' readonly>%s</textarea>\n", htmlTextarea($data));
 		} else {
 			printf("<textarea name='description' id='description' cols='80' rows='30' placeholder='Pas d&apos;actions enregistrées' readonly></textarea>\n");
 		}
@@ -734,11 +734,11 @@ function displayKanbanTask($id) {
 	dbDisconnect($base);
 	$today = date('Y-m-d', time());
 
-	$data = sprintf("%d:%s:%s:%s:%d", $record->id, traiteStringFromBDD($record->nom), traiteStringFromBDD($record->description), $record->datefin, $record->priority);
+	$data = sprintf("%d:%s:%s:%s:%d", $record->id, traiteStringFromBDD($record->nom), htmlTextarea(traiteStringFromBDD($record->description)), $record->datefin, $record->priority);
 	$data = base64_encode($data);
 	printf("<div id='task%d' class='draggable'>", $record->id);
 	printf("<div class='draggable-name'>%s - P%d<div id='deltask%d' class='del_kanban'>&ndash;</div></div>", traiteStringFromBDD($record->nom), intval($record->priority), $id);
-	printf("<p class='kanban_description'>%s</p>", traiteStringFromBDD($record->description));
+	printf("<p class='kanban_description'>%s</p>", htmlTextarea(traiteStringFromBDD($record->description)));
 	$interval = date_diff(date_create($record->datefin), date_create($today));
 	if ($interval->invert) {
 		if ($interval->days <= 3) {

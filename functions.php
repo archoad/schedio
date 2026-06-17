@@ -73,8 +73,10 @@ $server_path = dirname($_SERVER["SCRIPT_FILENAME"]);
 $cheminMD = sprintf("%s/data/", $server_path);
 // --------------------
 
-function menuAdmin()
-{
+
+
+
+function menuAdmin() {
 	genSyslog(__FUNCTION__);
 	$_SESSION["curr_script"] = "admin.php";
 	printf("<div class='row'>\n");
@@ -107,8 +109,8 @@ function menuAdmin()
 	printf("</div>\n</div>");
 }
 
-function menuUser()
-{
+
+function menuUser() {
 	genSyslog(__FUNCTION__);
 	$_SESSION["curr_script"] = "user.php";
 	printf("<div class='row'>\n");
@@ -170,8 +172,8 @@ function menuAuthentication() {
 	printf("</div></div>");
 }
 
-function dbConnect()
-{
+
+function dbConnect() {
 	global $servername, $dbname, $login, $passwd;
 	$link = mysqli_connect($servername, $login, $passwd, $dbname);
 	if (!$link) {
@@ -188,28 +190,28 @@ function dbConnect()
 	}
 }
 
-function dbDisconnect($dbh)
-{
+
+function dbDisconnect($dbh) {
 	mysqli_close($dbh);
 	$dbh = 0;
 }
 
-function base64UrlEncode($data)
-{
+
+function base64UrlEncode($data) {
 	$b64 = base64_encode($data);
 	$url = strtr($b64, "+/", "-_");
 	return rtrim($url, "=");
 }
 
-function base64UrlDecode($data)
-{
+
+function base64UrlDecode($data) {
 	$b64 = strtr($data, "-_", "+/");
 	$end = str_repeat("=", 3 - ((3 + strlen($data)) % 4));
 	return base64_decode($b64 . $end);
 }
 
-function startSession()
-{
+
+function startSession() {
 	session_set_cookie_params([
 		"lifetime" => 0,
 		"path" => "/",
@@ -221,8 +223,8 @@ function startSession()
 	session_start();
 }
 
-function destroySession()
-{
+
+function destroySession() {
 	genSyslog(__FUNCTION__);
 	session_unset();
 	session_destroy();
@@ -231,8 +233,8 @@ function destroySession()
 	header("Location: schedio.php");
 }
 
-function isSessionValid($role)
-{
+
+function isSessionValid($role) {
 	genSyslog(__FUNCTION__);
 	$now = time();
 	if ($now > $_SESSION["expire"]) {
@@ -250,16 +252,16 @@ function isSessionValid($role)
 	}
 }
 
-function isAuthorized($roles)
-{
+
+function isAuthorized($roles) {
 	genSyslog(__FUNCTION__);
 	if (!in_array($_SESSION["role"], $roles)) {
 		header("Location: " . $_SESSION["curr_script"]);
 	}
 }
 
-function infoSession()
-{
+
+function infoSession() {
 	$timeLeft = intdiv($_SESSION["expire"] - time(), 60);
 	$_SESSION["rand"] = genNonce(16);
 	$infoDay = sprintf("%s - %s", $_SESSION["day"], $_SESSION["hour"]);
@@ -290,8 +292,8 @@ function infoSession()
 	);
 }
 
-function detectIP()
-{
+
+function detectIP() {
 	if (isset($_SERVER)) {
 		if (isset($_SERVER["HTTP_X_FORWARDED_FOR"])) {
 			$usedIP = $_SERVER["HTTP_X_FORWARDED_FOR"];
@@ -312,8 +314,8 @@ function detectIP()
 	return $usedIP;
 }
 
-function detectBrowser()
-{
+
+function detectBrowser() {
 	$BrowserList = [
 		"Firefox" => "/Firefox/",
 		"Chrome" => "/Chrome/",
@@ -332,8 +334,8 @@ function detectBrowser()
 	return $CurrBrowser;
 }
 
-function detectOS()
-{
+
+function detectOS() {
 	$txt = $_SERVER["HTTP_USER_AGENT"];
 	$OSList = [
 		"Windows 3.11" => "/Win16/",
@@ -366,16 +368,16 @@ function detectOS()
 	return $currOS;
 }
 
-function genNonce($length)
-{
+
+function genNonce($length) {
 	$nonce = random_bytes($length);
 	$b64 = base64_encode($nonce);
 	$url = strtr($b64, "+/", "-_");
 	return rtrim($url, "=");
 }
 
-function genCspPolicy()
-{
+
+function genCspPolicy() {
 	global $cspReport;
 	$_SESSION["nonce"] = genNonce(8);
 	$cspPolicy = "Content-Security-Policy: ";
@@ -392,8 +394,8 @@ function genCspPolicy()
 	return $cspPolicy;
 }
 
-function genSyslog($caller, $msg = "")
-{
+
+function genSyslog($caller, $msg = "") {
 	global $progVersion;
 	$log = [];
 	$log["program"] = "schedio";
@@ -426,8 +428,8 @@ function genSyslog($caller, $msg = "")
 	closelog();
 }
 
-function headPage($titre, $sousTitre = "")
-{
+
+function headPage($titre, $sousTitre = "") {
 	genSyslog(__FUNCTION__);
 	$cspPolicy = genCspPolicy();
 	$nonce = $_SESSION["nonce"];
@@ -491,8 +493,8 @@ function headPage($titre, $sousTitre = "")
 	}
 }
 
-function footPage($link = "", $msg = "")
-{
+
+function footPage($link = "", $msg = "") {
 	genSyslog(__FUNCTION__);
 	if ($_SESSION["role"] === "100") {
 		printf("<div class='footer'>");
@@ -515,8 +517,8 @@ function footPage($link = "", $msg = "")
 	}
 }
 
-function dbPrepareExecute($base, $request, $types = "", ...$params)
-{
+
+function dbPrepareExecute($base, $request, $types = "", ...$params) {
 	$stmt = mysqli_prepare($base, $request);
 	if (!$stmt) {
 		genSyslog(__FUNCTION__, mysqli_error($base));
@@ -584,8 +586,8 @@ function dbFetchAllPrepared($base, $request, $types = "", ...$params)
 	return $records;
 }
 
-function validForms($msg, $url, $back = true, $csrfAction = "default")
-{
+
+function validForms($msg, $url, $back = true, $csrfAction = "default") {
 	printf("<fieldset><legend>Validation</legend>");
 	printf("<table><tr><td>");
 	csrfInput($csrfAction);
@@ -659,19 +661,25 @@ function traiteStringToBDD($str) {
 	return htmlspecialchars($output, ENT_QUOTES, "UTF-8");
 }
 
-function traiteStringFromBDD($str)
-{
-	return htmlspecialchars_decode($str, ENT_QUOTES);
+
+function htmlTextarea($value) {
+	return htmlspecialchars((string)$value, ENT_NOQUOTES | ENT_SUBSTITUTE, "UTF-8");
 }
 
-function generateToken()
-{
+
+function traiteStringFromBDD($str) {
+	$str = htmlspecialchars_decode((string)$str, ENT_QUOTES);
+	return htmlspecialchars($str, ENT_QUOTES | ENT_SUBSTITUTE, "UTF-8", false);
+}
+
+
+function generateToken() {
 	$token = hash("sha3-256", random_bytes(32));
 	return $token;
 }
 
-function getCsrfToken($action = "default")
-{
+
+function getCsrfToken($action = "default") {
 	if (
 		!isset($_SESSION["csrf_tokens"]) ||
 		!is_array($_SESSION["csrf_tokens"])
@@ -687,8 +695,8 @@ function getCsrfToken($action = "default")
 	return $_SESSION["csrf_tokens"][$action];
 }
 
-function csrfInput($action = "default")
-{
+
+function csrfInput($action = "default") {
 	$token = getCsrfToken($action);
 	printf(
 		"<input type='hidden' name='csrf_token' value='%s'>\n",
@@ -697,8 +705,7 @@ function csrfInput($action = "default")
 }
 
 
-function isCsrfValid($action = "default")
-{
+function isCsrfValid($action = "default") {
 	if ($_SERVER["REQUEST_METHOD"] !== "POST") {
 		return false;
 	}
@@ -721,8 +728,8 @@ function isCsrfValid($action = "default")
 	return $valid;
 }
 
-function clearCsrfToken($action = null)
-{
+
+function clearCsrfToken($action = null) {
 	if (!isset($_SESSION["csrf_tokens"])) {
 		return;
 	}
@@ -733,8 +740,8 @@ function clearCsrfToken($action = null)
 	unset($_SESSION["csrf_tokens"][$action]);
 }
 
-function getCredentialFromDb()
-{
+
+function getCredentialFromDb() {
 	$base = dbConnect();
 	$request = sprintf(
 		"SELECT credential_id, public_key, sign_count FROM users WHERE login='%s' LIMIT 1",
@@ -751,8 +758,8 @@ function getCredentialFromDb()
 	return $result;
 }
 
-function registerWebauthnCred()
-{
+
+function registerWebauthnCred() {
 	printf(
 		"<div class='msg'><div><img id='registerImg' src='pict/fido2key.png' alt='info'></div><div><p id='registerMsg'></p></div></div>",
 	);
@@ -764,6 +771,7 @@ function registerWebauthnCred()
 		$_SESSION["nonce"],
 	);
 }
+
 
 function changePassword() {
 	genSyslog(__FUNCTION__);
@@ -826,8 +834,8 @@ function recordNewPassword($passwd) {
 	return $success;
 }
 
-function getRole($id)
-{
+
+function getRole($id) {
 	$base = dbConnect();
 	$request = sprintf(
 		"SELECT intitule FROM role WHERE id='%d' LIMIT 1",
@@ -839,8 +847,8 @@ function getRole($id)
 	return $row->intitule;
 }
 
-function getChapter($id)
-{
+
+function getChapter($id) {
 	$base = dbConnect();
 	$request = sprintf(
 		"SELECT * FROM chapter WHERE id='%d' LIMIT 1",
@@ -851,6 +859,7 @@ function getChapter($id)
 	dbDisconnect($base);
 	return sprintf("%d - %s", $row->num, $row->nom);
 }
+
 
 function getUser($id) {
 	$base = dbConnect();
@@ -863,6 +872,7 @@ function getUser($id) {
 	dbDisconnect($base);
 	return sprintf("%s %s", $row->prenom, $row->nom);
 }
+
 
 function displayDate($date) {
 	return date_format(date_create($date), "d F Y");
@@ -888,8 +898,8 @@ function computeDuration($begin, $end) {
 	}
 }
 
-function taskProgressBar($id)
-{
+
+function taskProgressBar($id) {
 	$base = dbConnect();
 	$request = sprintf(
 		"SELECT avancement FROM task WHERE id='%d' LIMIT 1",
@@ -914,8 +924,8 @@ function taskProgressBar($id)
 	return $result;
 }
 
-function computeProjectProgress($id)
-{
+
+function computeProjectProgress($id) {
 	$val = 0;
 	$base = dbConnect();
 	$request = sprintf(
@@ -935,8 +945,8 @@ function computeProjectProgress($id)
 	}
 }
 
-function projectProgressBar($id)
-{
+
+function projectProgressBar($id) {
 	$percentage = computeProjectProgress($id);
 	$percentStyle = sprintf("percent%d", $percentage);
 	printf(
@@ -953,8 +963,8 @@ function projectProgressBar($id)
 	return $result;
 }
 
-function isProjectClosed($id)
-{
+
+function isProjectClosed($id) {
 	$base = dbConnect();
 	$request = sprintf(
 		"SELECT complete FROM project WHERE id='%d' LIMIT 1",
