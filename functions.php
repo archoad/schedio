@@ -33,9 +33,9 @@ $datefmt = datefmt_create(
 	IntlDateFormatter::GREGORIAN,
 );
 ini_set("error_reporting", E_ALL);
-#ini_set('error_reporting', E_ERROR);
-ini_set("display_errors", 1);
-ini_set("display_startup_errors", 1);
+ini_set("display_errors", 0);
+ini_set("display_startup_errors", 0);
+ini_set("log_errors", 1);
 ini_set("xdebug.var_display_max_depth", 8);
 ini_set("xdebug.var_display_max_children ", 3);
 ini_set("session.gc_maxlifetime", 86400); // 24h00
