@@ -144,7 +144,7 @@ function createProject() {
 	printf("</tr>\n<tr>\n");
 	printf("<td colspan='3'><textarea name='description' id='description' cols='60' rows='3' placeholder='Description' required></textarea></td>\n");
 	printf("</tr>\n<tr>\n");
-	printf("<td colspan='3'>Chapitre ISO27002:&nbsp;<select name='chapter' id='chapter' required>\n");
+	printf("<td colspan='3'>Domaine:&nbsp;<select name='chapter' id='chapter' required>\n");
 	printf("<option selected='selected' value=''>&nbsp;</option>\n");
 	while($row = mysqli_fetch_object($res_chapter)) {
 		printf("<option value='%d'>%s - %s</option>\n", intval($row->id), intval($row->num), traiteStringFromBDD($row->nom));
@@ -203,7 +203,7 @@ function modifProject() {
 	printf("</tr>\n<tr>\n");
 	printf("<td colspan='3'><textarea name='description' id='description' cols='60' rows='3' required>%s</textarea></td>\n", htmlTextarea(traiteStringFromBDD($record->description)));
 	printf("</tr>\n<tr>\n");
-	printf("<td colspan='3'>Chapitre ISO27002:&nbsp;<select name='chapter' id='chapter' required>\n");
+	printf("<td colspan='3'>Domain:&nbsp;<select name='chapter' id='chapter' required>\n");
 	printf("<option selected='selected' value='%d'>%s</option>\n", intval($record->chapter), getChapter($record->chapter));
 	while($row = mysqli_fetch_object($res_chapter)) {
 		printf("<option value='%d'>%s - %s</option>\n", intval($row->id), intval($row->num), traiteStringFromBDD($row->nom));
